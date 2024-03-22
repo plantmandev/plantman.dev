@@ -3,6 +3,6 @@ title: "Blog"
 listing:
   contents: blog-posts
   sort: "date desc"
-  type: grid
-  categories: false
+  type: default
+  categories: true
 ---

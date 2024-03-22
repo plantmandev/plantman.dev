@@ -1,9 +1,9 @@
 ---
 title: "Butterfly Population Analysis"
 description: "Research project on the change of local butterfly populations and relation to plant resources"
-author: "Gabriel Guzman"
+author: "Gabriel Guzman Blanco"
 date: "2023-03-23"
-categories: [Data Analytics, Biology]
+categories: [Data Analytics, Biology, Environmental Science]
 image: "euptoieta_claudia.JPG"
 format:
   html:

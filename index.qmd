@@ -1,36 +1,60 @@
 ---
-title: "Gabriel Guzman"
+title: "Gabriel Guzman Blanco"
+image: images/profile.png
 about:
-  template: jolla
-  image: images/profile.png
+  template: trestles
   links:
     - icon: linkedin
       text: LinkedIn
       href: https://www.linkedin.com/in/gabeguzman/
     - icon: github
       text: Github
-      href: https://github.com/sirplantman
+      href: https://github.com/plantmandev
     - icon: clipboard2-data-fill # Kaggle icon does not exist in Bootstrap. Find alternative
       text: Kaggle
       href: https://www.kaggle.com/sirplantman
     - icon: envelope-fill
-      text: Contact Me
-      href: mailto:gabeguzman08@gmail.com
+      text: Email
+      href: (mailto:gabeguzman08@gmail.com){target="_blank"}
+
 ---
 
-Biology and Environmental Science undergraduate interested in Data Science and Data Analytics. 
+## About
+<hr class="solid">
+
+I'm an Environmental Studies undergraduate student interested in data science and data analytics. I have an extensive background working with biological datasets and using analytics and science communication to describe the science of ecosystems to the public and the National Park Service. 
+
+I'm currently working on advancing my data science and data analytics skills and I'm interested in <u>environmental</u> and <u>e-commerce applications</u> of data analytics. 
 
 ## Education
- 
-<!-- Undergraduate University -->
-<p style="text-align: left; font-weight: bold; width:49%; display: inline-block;">Gettysburg College </p> 
-<p style="text-align: right; width:50%;  display: inline-block;">*Gettysburg, PA*</p>
+<hr class="solid">
 
-
-<!-- Biology Degree -->
-<p style="text-align: left; width:49%; display: inline-block;">B.S in Biology</p>
-<p style="text-align: right; width:50%;  display: inline-block;">Aug 2020 - May 2024</p>
+<!-- Undergraduate College -->
+#### Gettysburg College
 
 <!-- Environemental Studies Degree -->
 <p style="text-align: left; width:49%; display: inline-block;">B.S in Environmental Studies</p>
 <p style="text-align: right; width:50%;  display: inline-block;">Aug 2020 - May 2024</p>
+
+<!-- Graduate University -->
+#### University of Colorado, Boulder
+
+<!-- Master of Computer Science Degree -->
+<p style="text-align: left; width:49%; display: inline-block;">M.S in Computer Science</p>
+<p style="text-align: right; width:50%;  display: inline-block;">May 2024 - June 2026</p>
+
+## Experience
+<hr class="solid">
+
+
+
+## Projects
+<hr class="solid">
+
+---
+listing:
+  contents:
+  - projects/ants-in-guadarrama/index.qmd
+  - projects/lepidoptera-gettysburg/index.qmd
+  - projects/otter-point-creek/index.qmd
+---

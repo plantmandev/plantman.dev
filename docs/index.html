@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Portfolio - Gabriel Guzman</title>
+<title>Portfolio - Gabriel Guzman Blanco</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -31,14 +31,16 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
 <link href="./images/favicon.png" rel="icon" type="image/png">
+<script src="site_libs/quarto-listing/list.min.js"></script>
+<script src="site_libs/quarto-listing/quarto-listing.js"></script>
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -58,7 +60,37 @@ ul.task-list li input[type="checkbox"] {
     "search-submit-button-title": "Submit"
   }
 }</script>
+<script>
 
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    const listingTargetEl = window.document.querySelector('#listing-listing .list');
+    if (!listingTargetEl) {
+      // No listing discovered, do not attach.
+      return; 
+    }
+
+    const options = {
+      valueNames: ['listing-date','listing-title','listing-author','listing-image','listing-description',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      
+      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description"],
+    };
+
+    window['quarto-listings'] = window['quarto-listings'] || {};
+    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
+
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  });
+
+  window.addEventListener('hashchange',() => {
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  })
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -97,10 +129,6 @@ ul.task-list li input[type="checkbox"] {
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="./about.html">
- <span class="menu-text">About</span></a>
-  </li>  
   <li class="nav-item compact">
     <a class="nav-link" href="https://github.com/sirplantman"><i class="bi bi-github" role="img">
 </i> 
@@ -108,6 +136,11 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item compact">
     <a class="nav-link" href="https://www.linkedin.com/in/gabeguzman/"><i class="bi bi-linkedin" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.kaggle.com/sirplantman"><i class="bi bi-clipboard2-data-fill" role="img">
 </i> 
  <span class="menu-text"></span></a>
   </li>  
@@ -123,51 +156,23 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<div class="quarto-about-jolla column-page">
-  <img src="images/profile.png" class="about-image
-  round " style="height: 15em; width: 15em;">
- <header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-about-trestles column-page">
+  <div class="about-entity">
+    <img src="images/profile.png" class="about-image
+  rounded " style="width: 20em;">
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Gabriel Guzman</h1>
+<h1 class="title">Gabriel Guzman Blanco</h1>
 </div>
 <div class="quarto-title-meta">
   </div>
-</header><main class="content column-page" id="quarto-document-content">
-<p>Biology and Environmental Science undergraduate interested in Data Science and Data Analytics.</p>
-<section id="education" class="level2">
-<h2 data-anchor-id="education">Education</h2>
-<!-- Undergraduate University -->
-<p style="text-align: left; font-weight: bold; width:49%; display: inline-block;">
-Gettysburg College
-</p>
-<p style="text-align: right; width:50%;  display: inline-block;">
-<em>Gettysburg, PA</em>
-</p>
-<!-- Biology Degree -->
-<p style="text-align: left; width:49%; display: inline-block;">
-B.S in Biology
-</p>
-<p style="text-align: right; width:50%;  display: inline-block;">
-Aug 2020 - May 2024
-</p>
-<!-- Environemental Studies Degree -->
-<p style="text-align: left; width:49%; display: inline-block;">
-B.S in Environmental Studies
-</p>
-<p style="text-align: right; width:50%;  display: inline-block;">
-Aug 2020 - May 2024
-</p>
-
-
-</section>
-</main> 
-  <hr class="about-sep">
-   <div class="about-links">
+</header>
+    <div class="about-links">
   <a href="https://www.linkedin.com/in/gabeguzman/" class="about-link">
     <i class="bi bi-linkedin"></i>
      <span class="about-link-text">LinkedIn</span>
   </a>
-  <a href="https://github.com/sirplantman" class="about-link">
+  <a href="https://github.com/plantmandev" class="about-link">
     <i class="bi bi-github"></i>
      <span class="about-link-text">Github</span>
   </a>
@@ -175,11 +180,143 @@ Aug 2020 - May 2024
     <i class="bi bi-clipboard2-data-fill"></i>
      <span class="about-link-text">Kaggle</span>
   </a>
-  <a href="mailto:gabeguzman08@gmail.com" class="about-link">
+  <a href="/(mailto:gabeguzman08@gmail.com){target=" _blank"}"="" class="about-link">
     <i class="bi bi-envelope-fill"></i>
-     <span class="about-link-text">Contact Me</span>
+     <span class="about-link-text">Email</span>
   </a>
 </div>
+  </div>
+  <div class="about-contents"><main class="content column-page" id="quarto-document-content">
+<section id="about" class="level2">
+<h2 data-anchor-id="about">About</h2>
+<hr class="solid">
+<p>I’m an Environmental Science undergraduate student interested in Data Science and Data Analytics. I have an extensive background working with biological datasets and using analytics and science communication to describe the science of ecosystems to the public and the National Park Service.</p>
+<p>I’m currently working on advancing my data science and data analytics skills and I’m interested in <u>environmental</u> and <u>e-commerce applications</u> of data analytics.</p>
+</section>
+<section id="education" class="level2">
+<h2 data-anchor-id="education">Education</h2>
+<hr class="solid">
+<!-- Undergraduate College -->
+<section id="gettysburg-college" class="level4">
+<h4 data-anchor-id="gettysburg-college">Gettysburg College</h4>
+<!-- Environemental Studies Degree -->
+<p style="text-align: left; width:49%; display: inline-block;">
+B.S in Environmental Studies
+</p>
+<p style="text-align: right; width:50%;  display: inline-block;">
+Aug 2020 - May 2024
+</p>
+<!-- Graduate University -->
+</section>
+<section id="university-of-colorado-boulder" class="level4">
+<h4 data-anchor-id="university-of-colorado-boulder">University of Colorado, Boulder</h4>
+<!-- Master of Computer Science Degree -->
+<p style="text-align: left; width:49%; display: inline-block;">
+M.S in Computer Science
+</p>
+<p style="text-align: right; width:50%;  display: inline-block;">
+May 2024 - June 2026
+</p>
+</section>
+</section>
+<section id="experience" class="level2">
+<h2 data-anchor-id="experience">Experience</h2>
+<hr class="solid">
+</section>
+<section id="projects" class="level2">
+<h2 data-anchor-id="projects">Projects</h2>
+<hr class="solid">
+
+
+</section>
+<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
+<div class="list quarto-listing-default">
+<div class="quarto-post image-right" data-index="0" data-categories="Data Analytics,Biology,Environmental Science" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1711070998971" data-listing-reading-time-sort="6.67">
+<div class="thumbnail">
+<p><a href="./projects/ants-in-guadarrama/index.html"> <img src="./projects/ants-in-guadarrama/aphaenogaster_gibbosa.JPG" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/ants-in-guadarrama/index.html">
+<h3 class="no-anchor listing-title">
+Ant Morphology Analysis
+</h3>
+<div class="listing-subtitle">
+</div>
+<div class="listing-description">
+<p>Statistical analysis on the morphology and resource preference in ants</p>
+</div>
+</a>
+</div>
+<div class="metadata">
+<a href="./projects/ants-in-guadarrama/index.html">
+<div class="listing-date">
+Mar 23, 2023
+</div>
+<div class="listing-author">
+Gabriel Guzman Blanco
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="1" data-categories="Data Analytics,Biology,Environmental Science" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1711070338334" data-listing-reading-time-sort="0.455">
+<div class="thumbnail">
+<p><a href="./projects/lepidoptera-gettysburg/index.html"> <img src="./projects/lepidoptera-gettysburg/euptoieta_claudia.JPG" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/lepidoptera-gettysburg/index.html">
+<h3 class="no-anchor listing-title">
+Butterfly Population Analysis
+</h3>
+<div class="listing-subtitle">
+</div>
+<div class="listing-description">
+<p>Research project on the change of local butterfly populations and relation to plant resources</p>
+</div>
+</a>
+</div>
+<div class="metadata">
+<a href="./projects/lepidoptera-gettysburg/index.html">
+<div class="listing-date">
+Mar 23, 2023
+</div>
+<div class="listing-author">
+Gabriel Guzman Blanco
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="2" data-categories="Data Analytics,Biology,Environmental Science" data-listing-date-sort="1710993600000" data-listing-file-modified-sort="1711070321684" data-listing-reading-time-sort="0.005">
+<div class="thumbnail">
+<p><a href="./projects/otter-point-creek/index.html"> <img src="./projects/otter-point-creek/atkisson_dam.png" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/otter-point-creek/index.html">
+<h3 class="no-anchor listing-title">
+Long-Term Effects of Dam Removal on Sediment Dynamics: Insights from Edgewood’s Atkisson Dam
+</h3>
+<div class="listing-subtitle">
+</div>
+<div class="listing-description">
+<p>This research investigates the effects of sediment influx from the Atkisson Dam removal on submerged aquatic vegetation (SAV) in Otter Point Creek, Maryland, providing insights into the ecological impacts on aquatic ecosystems.</p>
+</div>
+</a>
+</div>
+<div class="metadata">
+<a href="./projects/otter-point-creek/index.html">
+<div class="listing-date">
+Mar 21, 2024
+</div>
+<div class="listing-author">
+Gabriel Guzman Blanco
+</div>
+</a>
+</div>
+</div>
+</div>
+<div class="listing-no-matching d-none">
+No matching items
+</div>
+</div></main></div>
 </div>
  <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -309,12 +446,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
-<footer class="footer">
-  <div class="nav-footer">
-    <div class="nav-footer-left"><span class="container"><strong>Made with <a href="https://quarto.org/" target="_blank">Posit Quarto</a></strong></span></div>   
-    <div class="nav-footer-right"><span class="container"><strong><a href="mailto:gabeguzman08@gmail.com" target="_blank">Contact Me</a></strong></span></div>
-  </div>
-</footer>
 
 
 

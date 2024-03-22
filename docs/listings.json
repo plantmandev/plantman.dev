@@ -2,6 +2,7 @@
   {
     "listing": "/projects.html",
     "items": [
+      "/projects/otter-point-creek/index.html",
       "/projects/ants-in-guadarrama/index.html",
       "/projects/lepidoptera-gettysburg/index.html"
     ]
@@ -10,6 +11,14 @@
     "listing": "/blog.html",
     "items": [
       "/blog-posts/intro-to-data/index.html"
+    ]
+  },
+  {
+    "listing": "/index.html",
+    "items": [
+      "/projects/ants-in-guadarrama/index.html",
+      "/projects/lepidoptera-gettysburg/index.html",
+      "/projects/otter-point-creek/index.html"
     ]
   }
 ]

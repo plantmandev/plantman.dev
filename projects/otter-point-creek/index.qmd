@@ -1,0 +1,13 @@
+---
+title: "Long-Term Effects of Dam Removal on Sediment Dynamics: Insights from Edgewood's Atkisson Dam"
+description: "This research investigates the effects of sediment influx from the Atkisson Dam removal on submerged aquatic vegetation (SAV) in Otter Point Creek, Maryland, providing insights into the ecological impacts on aquatic ecosystems."
+author: "Gabriel Guzman Blanco"
+date: "2024-03-21"
+categories: [Data Analytics, Biology, Environmental Science]
+image: "atkisson_dam.png"
+format:
+  html:
+    code-overflow: wrap
+    link-external-icon: true
+    link-external-newwindow: true
+---

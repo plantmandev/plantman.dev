@@ -38,10 +38,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -71,9 +71,9 @@ ul.task-list li input[type="checkbox"] {
     }
 
     const options = {
-      valueNames: ['listing-title','listing-author','listing-date','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      valueNames: ['listing-date','listing-title','listing-author','listing-image','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
       
-      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
+      searchColumns: ["listing-date","listing-title","listing-author","listing-image","listing-description","listing-categories"],
     };
 
     window['quarto-listings'] = window['quarto-listings'] || {};
@@ -130,10 +130,6 @@ ul.task-list li input[type="checkbox"] {
   </li>  
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="./about.html">
- <span class="menu-text">About</span></a>
-  </li>  
   <li class="nav-item compact">
     <a class="nav-link" href="https://github.com/sirplantman"><i class="bi bi-github" role="img">
 </i> 
@@ -141,6 +137,11 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item compact">
     <a class="nav-link" href="https://www.linkedin.com/in/gabeguzman/"><i class="bi bi-linkedin" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.kaggle.com/sirplantman"><i class="bi bi-clipboard2-data-fill" role="img">
 </i> 
  <span class="menu-text"></span></a>
   </li>  
@@ -156,7 +157,7 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
         
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(2)</span></div><div class="category" data-category="Biology">Biology <span class="quarto-category-count">(2)</span></div><div class="category" data-category="Data Analytics">Data Analytics <span class="quarto-category-count">(2)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Biology">Biology <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Data Analytics">Data Analytics <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Environmental Science">Environmental Science <span class="quarto-category-count">(2)</span></div></div></div>
 <!-- main -->
 <main class="content column-page-left" id="quarto-document-content">
 
@@ -181,18 +182,62 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
-<div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="Data Analytics,Biology" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1681325562667" data-listing-reading-time-sort="6.695">
-<a href="./projects/ants-in-guadarrama/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img src="./projects/ants-in-guadarrama/aphaenogaster_gibbosa.JPG" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
+<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
+<div class="list quarto-listing-default">
+<div class="quarto-post image-right" data-index="0" data-categories="Data Analytics,Biology,Environmental Science" data-listing-date-sort="1710993600000" data-listing-file-modified-sort="1711070321684" data-listing-reading-time-sort="0.005">
+<div class="thumbnail">
+<p><a href="./projects/otter-point-creek/index.html"> <img src="./projects/otter-point-creek/atkisson_dam.png" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/otter-point-creek/index.html">
+<h3 class="no-anchor listing-title">
+Long-Term Effects of Dam Removal on Sediment Dynamics: Insights from Edgewood’s Atkisson Dam
+</h3>
+<div class="listing-subtitle">
+
+</div>
+</a>
+<div class="listing-categories">
+<div class="listing-category" onclick="window.quartoListingCategory('Data Analytics'); return false;">
+Data Analytics
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('Biology'); return false;">
+Biology
+</div>
+<div class="listing-category" onclick="window.quartoListingCategory('Environmental Science'); return false;">
+Environmental Science
+</div>
+</div>
+<a href="./projects/otter-point-creek/index.html">
+<div class="listing-description">
+<p>This research investigates the effects of sediment influx from the Atkisson Dam removal on submerged aquatic vegetation (SAV) in Otter Point Creek, Maryland, providing insights into the ecological impacts on aquatic ecosystems.</p>
+</div>
+</a>
+</div>
+<div class="metadata">
+<a href="./projects/otter-point-creek/index.html">
+<div class="listing-date">
+Mar 21, 2024
+</div>
+<div class="listing-author">
+Gabriel Guzman Blanco
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="1" data-categories="Data Analytics,Biology" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1711058014866" data-listing-reading-time-sort="6.67">
+<div class="thumbnail">
+<p><a href="./projects/ants-in-guadarrama/index.html"> <img src="./projects/ants-in-guadarrama/aphaenogaster_gibbosa.JPG" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/ants-in-guadarrama/index.html">
+<h3 class="no-anchor listing-title">
 Ant Morphology Analysis
-</h5>
+</h3>
+<div class="listing-subtitle">
+
+</div>
+</a>
 <div class="listing-categories">
 <div class="listing-category" onclick="window.quartoListingCategory('Data Analytics'); return false;">
 Data Analytics
@@ -201,31 +246,36 @@ Data Analytics
 Biology
 </div>
 </div>
-<div class="card-text listing-description">
-Statistical analysis on the morphology and resource preference in ants
-</div>
-<div class="card-attribution card-text-small justify">
-<div class="listing-author">
-Gabriel Guzman
-</div>
-<div class="listing-date">
-Mar 23, 2023
-</div>
-</div>
-</div>
+<a href="./projects/ants-in-guadarrama/index.html">
+<div class="listing-description">
+<p>Statistical analysis on the morphology and resource preference in ants</p>
 </div>
 </a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="Data Analytics,Biology" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1681325378349" data-listing-reading-time-sort="0.455">
-<a href="./projects/lepidoptera-gettysburg/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img src="./projects/lepidoptera-gettysburg/euptoieta_claudia.JPG" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
+<div class="metadata">
+<a href="./projects/ants-in-guadarrama/index.html">
+<div class="listing-date">
+Mar 23, 2023
+</div>
+<div class="listing-author">
+Gabriel Guzman
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="2" data-categories="Data Analytics,Biology,Environmental Science" data-listing-date-sort="1679544000000" data-listing-file-modified-sort="1711070338334" data-listing-reading-time-sort="0.455">
+<div class="thumbnail">
+<p><a href="./projects/lepidoptera-gettysburg/index.html"> <img src="./projects/lepidoptera-gettysburg/euptoieta_claudia.JPG" class="thumnail-image"> </a></p>
+</div>
+<div class="body">
+<a href="./projects/lepidoptera-gettysburg/index.html">
+<h3 class="no-anchor listing-title">
 Butterfly Population Analysis
-</h5>
+</h3>
+<div class="listing-subtitle">
+
+</div>
+</a>
 <div class="listing-categories">
 <div class="listing-category" onclick="window.quartoListingCategory('Data Analytics'); return false;">
 Data Analytics
@@ -233,21 +283,26 @@ Data Analytics
 <div class="listing-category" onclick="window.quartoListingCategory('Biology'); return false;">
 Biology
 </div>
+<div class="listing-category" onclick="window.quartoListingCategory('Environmental Science'); return false;">
+Environmental Science
 </div>
-<div class="card-text listing-description">
-Research project on the change of local butterfly populations and relation to plant resources
 </div>
-<div class="card-attribution card-text-small justify">
-<div class="listing-author">
-Gabriel Guzman
+<a href="./projects/lepidoptera-gettysburg/index.html">
+<div class="listing-description">
+<p>Research project on the change of local butterfly populations and relation to plant resources</p>
 </div>
+</a>
+</div>
+<div class="metadata">
+<a href="./projects/lepidoptera-gettysburg/index.html">
 <div class="listing-date">
 Mar 23, 2023
 </div>
-</div>
-</div>
+<div class="listing-author">
+Gabriel Guzman Blanco
 </div>
 </a>
+</div>
 </div>
 </div>
 <div class="listing-no-matching d-none">
@@ -388,12 +443,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
-<footer class="footer">
-  <div class="nav-footer">
-    <div class="nav-footer-left"><span class="container"><strong>Made with <a href="https://quarto.org/" target="_blank">Posit Quarto</a></strong></span></div>   
-    <div class="nav-footer-right"><span class="container"><strong><a href="mailto:gabeguzman08@gmail.com" target="_blank">Contact Me</a></strong></span></div>
-  </div>
-</footer>
 
 
 

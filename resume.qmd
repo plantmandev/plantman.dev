@@ -1,5 +1,7 @@
 <iframe 
   width="1050" 
   height="1200" 
-  src="/images/Resume.pdf">
+  src="./resources/resume.pdf">
 </iframe>
+
+<!-- <embed src="./resources/resume.pdf" type="application/pdf" width="600" height="400" /> -->

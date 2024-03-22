@@ -2,21 +2,21 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "Gabriel Guzman",
+    "title": "Gabriel Guzman Blanco",
     "section": "",
-    "text": "Biology and Environmental Science undergraduate interested in Data Science and Data Analytics."
+    "text": "I’m an Environmental Science undergraduate student interested in Data Science and Data Analytics. I have an extensive background working with biological datasets and using analytics and science communication to describe the science of ecosystems to the public and the National Park Service.\nI’m currently working on advancing my data science and data analytics skills and I’m interested in environmental and e-commerce applications of data analytics."
   },
   {
     "objectID": "index.html#education",
     "href": "index.html#education",
-    "title": "Gabriel Guzman",
+    "title": "Gabriel Guzman Blanco",
     "section": "Education",
-    "text": "Education\n\n\nGettysburg College\n\n\nGettysburg, PA\n\n\n\nB.S in Biology\n\n\nAug 2020 - May 2024\n\n\n\nB.S in Environmental Studies\n\n\nAug 2020 - May 2024"
+    "text": "Education\n\n\n\nGettysburg College\n\n\nB.S in Environmental Studies\n\n\nAug 2020 - May 2024\n\n\n\n\nUniversity of Colorado, Boulder\n\n\nM.S in Computer Science\n\n\nMay 2024 - June 2026"
   },
   {
     "objectID": "index.html#experience",
     "href": "index.html#experience",
-    "title": "Gabriel Guzman",
+    "title": "Gabriel Guzman Blanco",
     "section": "Experience",
     "text": "Experience"
   },
@@ -32,21 +32,21 @@
     "href": "projects.html",
     "title": "Projects",
     "section": "",
-    "text": "Ant Morphology Analysis\n\n\n\nData Analytics\n\n\nBiology\n\n\n\nStatistical analysis on the morphology and resource preference in ants\n\n\n\nGabriel Guzman\n\n\nMar 23, 2023\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nButterfly Population Analysis\n\n\n\nData Analytics\n\n\nBiology\n\n\n\nResearch project on the change of local butterfly populations and relation to plant resources\n\n\n\nGabriel Guzman\n\n\nMar 23, 2023\n\n\n\n\n\n\n\n\nNo matching items"
+    "text": "Long-Term Effects of Dam Removal on Sediment Dynamics: Insights from Edgewood’s Atkisson Dam\n\n\n\n\n\n\n\nData Analytics\n\n\nBiology\n\n\nEnvironmental Science\n\n\n\n\nThis research investigates the effects of sediment influx from the Atkisson Dam removal on submerged aquatic vegetation (SAV) in Otter Point Creek, Maryland, providing insights into the ecological impacts on aquatic ecosystems.\n\n\n\n\n\n\nMar 21, 2024\n\n\nGabriel Guzman Blanco\n\n\n\n\n\n\n  \n\n\n\n\nAnt Morphology Analysis\n\n\n\n\n\n\n\nData Analytics\n\n\nBiology\n\n\n\n\nStatistical analysis on the morphology and resource preference in ants\n\n\n\n\n\n\nMar 23, 2023\n\n\nGabriel Guzman\n\n\n\n\n\n\n  \n\n\n\n\nButterfly Population Analysis\n\n\n\n\n\n\n\nData Analytics\n\n\nBiology\n\n\nEnvironmental Science\n\n\n\n\nResearch project on the change of local butterfly populations and relation to plant resources\n\n\n\n\n\n\nMar 23, 2023\n\n\nGabriel Guzman Blanco\n\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "about.html",
     "href": "about.html",
-    "title": "About",
+    "title": "Gabriel Guzman Blanco",
     "section": "",
-    "text": "I am a Biology and Environmental Science undergraduate interested in Data Science and Data Analytics. I have an extensive background working with biological datasets and using analytics and science communication to describe the science of ecosystems to the public and the National Park Service.\nI am currently working on advancing my data science and data analytics skills specifically to the e-commerce realm."
+    "text": "I’m an Environmental Science undergraduate student interested in Data Science and Data Analytics. I have an extensive background working with biological datasets and using analytics and science communication to describe the science of ecosystems to the public and the National Park Service.\nI’m currently working on advancing my data science and data analytics skills and I’m interested in environmental and e-commerce applications of data analytics."
   },
   {
     "objectID": "blog.html",
     "href": "blog.html",
     "title": "Blog",
     "section": "",
-    "text": "Intro to Data Science Presentation\n\n\n\n\n\n\nGabriel Guzman\n\n\nMar 2, 2023\n\n\n\n\n\n\n\n\nNo matching items"
+    "text": "Intro to Data Science Presentation\n\n\n\n\n\n\n\nData Science\n\n\nData Analytics\n\n\nMachine Learning\n\n\n\n\n\n\n\n\n\n\n\nMar 2, 2023\n\n\nGabriel Guzman\n\n\n\n\n\n\nNo matching items"
   },
   {
     "objectID": "projects/titanic/index.html",
@@ -107,9 +107,9 @@
   {
     "objectID": "about.html#education",
     "href": "about.html#education",
-    "title": "About",
+    "title": "Gabriel Guzman Blanco",
     "section": "Education",
-    "text": "Education\n\n\nGettysburg College\n\n\nGettysburg, PA\n\n\n\nB.S in Biology\n\n\nAug 2020 - May 2024\n\n\n\nB.S in Environmental Studies\n\n\nAug 2020 - May 2024"
+    "text": "Education\n\n\n\nGettysburg College\n\n\nB.S in Environmental Studies\n\n\nAug 2020 - May 2024\n\n\n\n\nUniversity of Colorado, Boulder\n\n\nM.S in Computer Science\n\n\nMay 2024 - June 2026"
   },
   {
     "objectID": "projects/ants-in-guadarrama/index.html#hypothesis-1",
@@ -117,5 +117,33 @@
     "title": "Ant Morphology Analysis",
     "section": "HYPOTHESIS 1",
     "text": "HYPOTHESIS 1\n\nData Summary Calculations\n\n# Import Data + Create Dataframes\n\nAnt = read.csv(\"Ant_traits_in_central_Spain.csv\", header = TRUE) #Importing data set into R from local device for Hypothesis 1 \n\nhead_mean = mean(Ant$head) #Create data frame for the mean size of ant head\nprint(head_mean) #Output the value in 'head_mean', the mean size of the head\n\nleg_mean = mean(Ant$leg) #Create data frame for the mean size of ant leg\nprint(leg_mean) #Output the value in 'leg_mean', the mean size of the leg\n\nscape_mean = mean(Ant$scape) #Create data frame for the mean size of ant scape\nprint(scape_mean) #Output the value in 'scape_mean', the mean size of the scape\n\neye_mean = mean(Ant$scape) #Create data frame for the mean size of ant eye\nprint(eye_mean) #Output the value in 'eye_mean', the mean size of the eye\n\n\n\nTest for Statistical Significance (Linear Regression)\n\n\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.\n\n\n\n\nmod_eye = lm(eye ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude\nsummary(mod_eye) #Displaying the results of the linear model calculation \n\n\n\n\nCall:\nlm(formula = eye ~ altitude, data = Ant)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.18512 -0.07062 -0.01803  0.06336  0.40555 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  2.343e-01  8.131e-03  28.814  < 2e-16 ***\naltitude    -2.227e-05  5.992e-06  -3.716 0.000213 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.09223 on 1064 degrees of freedom\n  (13 observations deleted due to missingness)\nMultiple R-squared:  0.01281,   Adjusted R-squared:  0.01189 \nF-statistic: 13.81 on 1 and 1064 DF,  p-value: 0.0002126\n\n\n\n\n\n\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.\n\n\n\n\nmod_head = lm(head ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude\nsummary(mod_head) #Displaying the results of the linear model calculation \n\n\n\n\nCall:\nlm(formula = head ~ altitude, data = Ant)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.75324 -0.29602 -0.04399  0.22126  2.37833 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  1.187e+00  3.613e-02  32.863  < 2e-16 ***\naltitude    -1.252e-04  2.663e-05  -4.701 2.92e-06 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.4098 on 1064 degrees of freedom\n  (13 observations deleted due to missingness)\nMultiple R-squared:  0.02035,   Adjusted R-squared:  0.01943 \nF-statistic:  22.1 on 1 and 1064 DF,  p-value: 2.925e-06\n\n\n\n\n\n\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.\n\n\n\n\nmod_leg = lm(leg ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude\nsummary(mod_leg) #Displaying the results of the linear model calculation \n\n\n\n\nCall:\nlm(formula = leg ~ altitude, data = Ant)\n\nResiduals:\n    Min      1Q  Median      3Q     Max \n-1.0824 -0.5439 -0.1428  0.5350  2.5360 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  1.486e+00  5.796e-02  25.646  < 2e-16 ***\naltitude    -2.368e-04  4.271e-05  -5.543 3.74e-08 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.6574 on 1064 degrees of freedom\n  (13 observations deleted due to missingness)\nMultiple R-squared:  0.02807,   Adjusted R-squared:  0.02716 \nF-statistic: 30.73 on 1 and 1064 DF,  p-value: 3.743e-08\n\n\n\n\n\n\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.\n\n\n\n\nmod_scape = lm(scape ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude\nsummary(mod_scape) #Displaying the results of the linear model calculation \n\n\n\n\nCall:\nlm(formula = scape ~ altitude, data = Ant)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.84836 -0.40154 -0.08094  0.40349  2.33945 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  1.324e+00  4.402e-02  30.087  < 2e-16 ***\naltitude    -2.205e-04  3.244e-05  -6.796 1.78e-11 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.4993 on 1064 degrees of freedom\n  (13 observations deleted due to missingness)\nMultiple R-squared:  0.04161,   Adjusted R-squared:  0.04071 \nF-statistic: 46.19 on 1 and 1064 DF,  p-value: 1.783e-11\n\n\n\n\nResult: All morphological features analyzed had a statistically significant relation to altitude (p-value < 0.05)\n\n\nFigure Creation (Linear Regression)\n\n# Linear regression figure for eye size \nggplot(Ant,aes(x=altitude, y=eye)) + \n  geom_point() + \n  theme_classic() + #Change theme  for aesthetics \n  geom_smooth(method=\"lm\") + \n  labs(x='Altitude (in meters)', y='Logged Eye Size')\n\n\n\n# Linear regression figure for head size\nggplot(Ant,aes(x=altitude, y=head)) + \n  geom_point() + \n  theme_classic() + \n  geom_smooth(method=\"lm\") + \n  labs(x='Altitude (in meters)', y='Logged Head Size')\n\n\n\n# Linear regression figure for leg size\nggplot(Ant,aes(x=altitude, y=leg)) + \n  geom_point() + \n  theme_classic() + \n  geom_smooth(method=\"lm\") + \n  labs(x='Altitude (in meters)', y='Logged Leg Size')\n\n\n\n# Linear regression figure for scape size\nggplot(Ant,aes(x=altitude, y=scape)) + \n  geom_point() + \n  theme_classic() + \n  geom_smooth(method=\"lm\") + \n  labs(x='Altitude (in meters)', y='Logged Scape Size')\n\n\n\n\nResult: Four figures depicting the relationship of ant morphology to altitude"
+  },
+  {
+    "objectID": "about.html#experience",
+    "href": "about.html#experience",
+    "title": "Gabriel Guzman Blanco",
+    "section": "Experience",
+    "text": "Experience"
+  },
+  {
+    "objectID": "about.html#projects",
+    "href": "about.html#projects",
+    "title": "Gabriel Guzman Blanco",
+    "section": "Projects",
+    "text": "Projects"
+  },
+  {
+    "objectID": "index.html#projects",
+    "href": "index.html#projects",
+    "title": "Gabriel Guzman Blanco",
+    "section": "Projects",
+    "text": "Projects"
+  },
+  {
+    "objectID": "projects/otter-point-creek/index.html",
+    "href": "projects/otter-point-creek/index.html",
+    "title": "Long-Term Effects of Dam Removal on Sediment Dynamics: Insights from Edgewood’s Atkisson Dam",
+    "section": "",
+    "text": ":::{.column-page}"
   }
 ]

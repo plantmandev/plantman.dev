@@ -3,6 +3,6 @@ title: "Projects"
 listing:
   contents: projects
   sort: "date desc"
-  type: grid
+  type: default
   categories: true
 ---

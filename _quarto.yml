@@ -5,12 +5,6 @@ project:
 website:
   title: "Portfolio"
   favicon: "images/favicon.png"
-  page-footer:
-    left: |
-      <span class="container"><strong>Made with [Posit Quarto](https://quarto.org/){target="_blank"}</strong></span>
-    right: |
-      <span class="container"><strong>[Contact Me](mailto:gabeguzman08@gmail.com){target="_blank"}</strong></span>
-    background: "#1c1c1e"
   search:
     location: navbar
     type: overlay
@@ -25,15 +19,18 @@ website:
       - text: Resume
         href: resume.qmd
     right:
-      - about.qmd
       - icon: github
         href: https://github.com/sirplantman
       - icon: linkedin
         href: https://www.linkedin.com/in/gabeguzman/
+      - icon: clipboard2-data-fill # Kaggle icon does not exist in Bootstrap. Find alternative
+        href: https://www.kaggle.com/sirplantman
+      - icon: envelope-fill
+        # href: (mailto:gabeguzman08@gmail.com){target="_blank"}
 format:
   html:
     page-layout: full
-    theme: lux
+    theme: darkly
     css: styles.css
     fontsize: 0.85em
     highlight-style: github
