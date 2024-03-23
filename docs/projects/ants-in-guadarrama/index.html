@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Gabriel Guzman">
+<meta name="author" content="Gabriel Guzman Blanco, Aiden Ludka, Alexis Jones and Anna Imrie">
 <meta name="dcterms.date" content="2023-03-23">
 <meta name="description" content="Statistical analysis on the morphology and resource preference in ants">
 
@@ -198,6 +198,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
                           <div class="quarto-categories">
                 <div class="quarto-category">Data Analytics</div>
                 <div class="quarto-category">Biology</div>
+                <div class="quarto-category">Environmental Science</div>
               </div>
                   </div>
   </div>
@@ -208,7 +209,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <div>
       <div class="quarto-title-meta-heading">Author</div>
       <div class="quarto-title-meta-contents">
-               <p>Gabriel Guzman </p>
+               <p>Gabriel Guzman Blanco, Aiden Ludka, Alexis Jones and Anna Imrie </p>
             </div>
     </div>
       
@@ -236,7 +237,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="altitude-associated-changes-in-ant-morphology-and-genus-dependent-resource-preference-in-guadarrama-ants" class="level1">
 <h1>Altitude Associated Changes in ant Morphology and Genus-dependent Resource Preference in Guadarrama Ants</h1>
 <div class="columns">
-<div class="column" style="width:43%;">
+<div class="column" style="width:46%;">
 <p>This analysis is based on a several studies taking place in the Guadarra Mountains of Spain by the same group of scientists. Scientists measured the size of the different morphological structures of a multitude of ant genera across varying altitudes and regions of Guadarra mountain range as well as the resources ants were observed using. We aim to analyze how the size of the measured morphological features varies with altitude as well as to understand a genus-specific preference for certain resource types across ant taxa.</p>
 The data sets we used can be found here:
 <ul style="list-style-type:none">
@@ -253,7 +254,7 @@ The data sets we used can be found here:
 <a href="hhttps://doi.org/10.1111/een.13077" class="external" target="_blank">Diverging facets of grassland ant diversity along a Mediterranean elevational gradient</a>
 </li>
 <li>
-Author(s): Mariola Silvestre, Carlos Carmona, Francisco Azcárate, Javier Seoane.
+<u>Author(s):</u> Mariola Silvestre, Carlos Carmona, Francisco Azcárate, Javier Seoane.
 </li>
 </ul>
 <ul style="list-style-type:none">
@@ -261,44 +262,35 @@ Author(s): Mariola Silvestre, Carlos Carmona, Francisco Azcárate, Javier Seoane
 <a href="https://doi.org/10.1016/j.actao.2020.103695" class="external" target="_blank">Abiotic controls, but not species richness, shape niche overlap and breadth of ant assemblages along an elevational gradient in central Spain</a>
 </li>
 <li>
-Author(s): Javier Seoane, Mariola Silvestre, Violeta Hevia, Rubén Ariño and Francisco Azcárate.
+<u>Author(s):</u> Javier Seoane, Mariola Silvestre, Violeta Hevia, Rubén Ariño and Francisco Azcárate.
 </li>
 </ul>
-</div><div class="column" style="width:4%;">
+</div><div class="column" style="width:8%;">
 
-</div><div class="column" style="width:53%;">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="aphaenogaster_gibbosa.JPG" title="Title: Aphaenogaster gibossa" class="img-fluid figure-img" alt="Aphaenogaster gibossa"></p>
-</figure>
+</div><div class="column" style="width:46%;">
+<p><img src="aphaenogaster_gibbosa.JPG" title="Title: Aphaenogaster gibossa" class="img-fluid" data-fig-align="center" alt="Aphaenogaster gibossa"> Figure 1: Image of ___ (Aphaenogaster gibbosa) consuming deceased insect.</p>
 </div>
 </div>
-</div>
-<div class="{screen-inset-shaded}">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="aphaenogaster_gibbosa.JPG" title="Title: Aphaenogaster gibossa" class="img-fluid figure-img" alt="Aphaenogaster gibossa"></p>
-</figure>
-</div>
-</div>
-<hr>
+<section id="data-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="data-analysis">Data Analysis</h2>
+<p>The following scripts are used to answer two hypothesis we</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install and Load Packages</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#Downloading all desired packages into local device</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Downloading all desired packages into local device</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span> (<span class="st">"tidyverse"</span>, <span class="at">repos =</span> <span class="st">"https://cran.rstudio.com"</span>) <span class="co">#This package allows for simplified and more intuitive syntax in R </span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span> (<span class="st">"rstatix"</span>, <span class="at">repos =</span> <span class="st">"https://cran.rstudio.com"</span>) <span class="co">#This package allows for a variety of tests for statistical significance with the use of its integrated functions</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span> (<span class="st">"ggplot2"</span>, <span class="at">repos =</span> <span class="st">"https://cran.rstudio.com"</span>) <span class="co">#This package allows for the </span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#Loading all libraries into current R notebook</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Loading all libraries into current R notebook</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span> (tidyverse)</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span> (rstatix)</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span> (ggplot2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="hypothesis-1" class="level2">
-<h2 class="anchored" data-anchor-id="hypothesis-1">HYPOTHESIS 1</h2>
-<section id="data-summary-calculations" class="level3">
-<h3 class="anchored" data-anchor-id="data-summary-calculations">Data Summary Calculations</h3>
+<section id="hypothesis-1" class="level3">
+<h3 class="anchored" data-anchor-id="hypothesis-1">Hypothesis 1:</h3>
+<section id="data-summary-calculations" class="level4">
+<h4 class="anchored" data-anchor-id="data-summary-calculations">Data Summary Calculations</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import Data + Create Dataframes</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -316,16 +308,7 @@ Author(s): Javier Seoane, Mariola Silvestre, Violeta Hevia, Rubén Ariño and Fr
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>eye_mean <span class="ot">=</span> <span class="fu">mean</span>(Ant<span class="sc">$</span>scape) <span class="co">#Create data frame for the mean size of ant eye</span></span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(eye_mean) <span class="co">#Output the value in 'eye_mean', the mean size of the eye</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="test-for-statistical-significance-linear-regression" class="level3">
-<h3 class="anchored" data-anchor-id="test-for-statistical-significance-linear-regression">Test for Statistical Significance (Linear Regression)</h3>
-<!-- Eye Code + Output -->
-<div class="columns">
-<div class="column" style="width:48%;">
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-</div><div class="column" style="width:4%;">
-
-</div><div class="column" style="width:48%;">
+<p>###/3 Test for Statistical Significance (Linear Regression)</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>mod_eye <span class="ot">=</span> <span class="fu">lm</span>(eye <span class="sc">~</span> altitude, <span class="at">data =</span> Ant) <span class="co">#Creation of a linear model calculations for head measurements in relation to altitude</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_eye) <span class="co">#Displaying the results of the linear model calculation </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -353,15 +336,7 @@ Multiple R-squared:  0.01281,   Adjusted R-squared:  0.01189
 F-statistic: 13.81 on 1 and 1064 DF,  p-value: 0.0002126</code></pre>
 </div>
 </div>
-</div>
-</div>
-<!-- Head Code + Output -->
-<div class="columns">
-<div class="column" style="width:48%;">
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-</div><div class="column" style="width:4%;">
-
-</div><div class="column" style="width:48%;">
+<p>:::</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>mod_head <span class="ot">=</span> <span class="fu">lm</span>(head <span class="sc">~</span> altitude, <span class="at">data =</span> Ant) <span class="co">#Creation of a linear model calculations for head measurements in relation to altitude</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_head) <span class="co">#Displaying the results of the linear model calculation </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -389,15 +364,6 @@ Multiple R-squared:  0.02035,   Adjusted R-squared:  0.01943
 F-statistic:  22.1 on 1 and 1064 DF,  p-value: 2.925e-06</code></pre>
 </div>
 </div>
-</div>
-</div>
-<!-- Leg Code + Output -->
-<div class="columns">
-<div class="column" style="width:48%;">
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-</div><div class="column" style="width:4%;">
-
-</div><div class="column" style="width:48%;">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mod_leg <span class="ot">=</span> <span class="fu">lm</span>(leg <span class="sc">~</span> altitude, <span class="at">data =</span> Ant) <span class="co">#Creation of a linear model calculations for head measurements in relation to altitude</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_leg) <span class="co">#Displaying the results of the linear model calculation </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -425,15 +391,7 @@ Multiple R-squared:  0.02807,   Adjusted R-squared:  0.02716
 F-statistic: 30.73 on 1 and 1064 DF,  p-value: 3.743e-08</code></pre>
 </div>
 </div>
-</div>
-</div>
 <!-- Scape Code + Output -->
-<div class="columns">
-<div class="column" style="width:48%;">
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.</p>
-</div><div class="column" style="width:4%;">
-
-</div><div class="column" style="width:48%;">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mod_scape <span class="ot">=</span> <span class="fu">lm</span>(scape <span class="sc">~</span> altitude, <span class="at">data =</span> Ant) <span class="co">#Creation of a linear model calculations for head measurements in relation to altitude</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_scape) <span class="co">#Displaying the results of the linear model calculation </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -461,12 +419,10 @@ Multiple R-squared:  0.04161,   Adjusted R-squared:  0.04071
 F-statistic: 46.19 on 1 and 1064 DF,  p-value: 1.783e-11</code></pre>
 </div>
 </div>
-</div>
-</div>
 <p>Result: All morphological features analyzed had a statistically significant relation to altitude (p-value &lt; 0.05)</p>
 </section>
-<section id="figure-creation-linear-regression" class="level3">
-<h3 class="anchored" data-anchor-id="figure-creation-linear-regression">Figure Creation (Linear Regression)</h3>
+<section id="figure-creation-linear-regression" class="level4">
+<h4 class="anchored" data-anchor-id="figure-creation-linear-regression">Figure Creation (Linear Regression)</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Linear regression figure for eye size </span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(Ant,<span class="fu">aes</span>(<span class="at">x=</span>altitude, <span class="at">y=</span>eye)) <span class="sc">+</span> </span>
@@ -509,23 +465,12 @@ F-statistic: 46.19 on 1 and 1064 DF,  p-value: 1.783e-11</code></pre>
 </section>
 </section>
 </section>
-<section id="tldr" class="level1">
-<h1>TL;DR</h1>
-<div class="columns">
-<div class="column" style="width:48%;">
+<section id="tldr" class="level2">
+<h2 class="anchored" data-anchor-id="tldr">TL;DR</h2>
 <p>This analysis is based on a several studies taking place in the Guadarra Mountains of Spain by the same group of scientists. Scientists measured the size of the different morphological structures of a multitude of ant genera across varying altitudes and regions of Guadarra mountain range as well as the resources ants were observed using. We aim to analyze how the size of the measured morphological features varies with altitude as well as to understand a genus-specific preference for certain resource types across ant taxa.</p>
-</div><div class="column" style="width:4%;">
-
-</div><div class="column" style="width:48%;">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="aphaenogaster_gibbosa.JPG" title="Title: Aphaenogaster gibossa" class="img-fluid figure-img" alt="Aphaenogaster gibossa"></p>
-</figure>
-</div>
-</div>
-</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

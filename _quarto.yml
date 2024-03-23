@@ -33,9 +33,8 @@ format:
     theme: darkly
     css: styles.css
     fontsize: 0.85em
-    highlight-style: github
-    code-block-border-left: "#042c64"
-    code-block-bg: "#fffcfc"
+    highlight-style: printing
+    code-block-bg: "#E5E4E2"
     code-overflow: wrap
 execute:
   echo: true

@@ -1,7 +1,7 @@
 ---
 title: "Ant Morphology Analysis"
 description: "Statistical analysis on the morphology and resource preference in ants"
-author: "Gabriel Guzman Blanco"
+author: "Gabriel Guzman Blanco, Aiden Ludka, Alexis Jones and Anna Imrie"
 date: "2023-03-23"
 categories: [Data Analytics, Biology, Environmental Science]
 image: "aphaenogaster_gibbosa.JPG"
@@ -15,7 +15,7 @@ format:
 # Altitude Associated Changes in ant Morphology and Genus-dependent Resource Preference in Guadarrama Ants
 
 ::: columns 
-::: {.column width="43%"}
+::: {.column width="46%"}
 This analysis is based on a several studies taking place in the Guadarra Mountains of Spain by the same group of scientists. Scientists measured the size of the different morphological structures of a multitude of ant genera across varying altitudes and regions of Guadarra mountain range as well as the resources ants were observed using. We aim to analyze how the size of the measured morphological features varies with altitude as well as to understand a genus-specific preference for certain resource types across ant taxa. 
 
 The data sets we used can be found here: 
@@ -30,46 +30,51 @@ The original research papers can be found here:
   <li> 
   [Diverging facets of grassland ant diversity along a Mediterranean elevational gradient](hhttps://doi.org/10.1111/een.13077){.external target="_blank"}
   </li> 
-  <li>Author(s): Mariola Silvestre, Carlos Carmona, Francisco Azcárate, Javier Seoane.</li>
+  <li><u>Author(s):</u> Mariola Silvestre, Carlos Carmona, Francisco Azcárate, Javier Seoane.</li>
 </ul> 
 
 <ul style="list-style-type:none">
  <li> 
   [Abiotic controls, but not species richness, shape niche overlap and breadth of ant assemblages along an elevational gradient in central Spain](https://doi.org/10.1016/j.actao.2020.103695){.external target="_blank"}
   </li> 
-  <li>Author(s): Javier Seoane, Mariola Silvestre, Violeta Hevia, Rubén Ariño and Francisco Azcárate.</li>
+  <li><u>Author(s):</u> Javier Seoane, Mariola Silvestre, Violeta Hevia, Rubén Ariño and Francisco Azcárate.</li>
 </ul> 
 :::
 
-::: {.column width="4%"}
+::: {.column width="8%"}
 
 :::
 
-::: {.column width="53%"}
+::: {.column width="46%"}
 ![](aphaenogaster_gibbosa.JPG "Title: Aphaenogaster gibossa"){fig-alt="Aphaenogaster gibossa" fig-align="center"}
+Figure 1: Image of ___ (Aphaenogaster gibbosa) consuming deceased insect.
+
 :::
 :::
 
---------
+## Data Analysis
+
+The following scripts are used to answer two hypothesis we 
+
 ```{r}
 #| output: false
 
 # Install and Load Packages
 
-#Downloading all desired packages into local device
+# Downloading all desired packages into local device
 install.packages ("tidyverse", repos = "https://cran.rstudio.com") #This package allows for simplified and more intuitive syntax in R 
 install.packages ("rstatix", repos = "https://cran.rstudio.com") #This package allows for a variety of tests for statistical significance with the use of its integrated functions
 install.packages ("ggplot2", repos = "https://cran.rstudio.com") #This package allows for the 
 
-#Loading all libraries into current R notebook
+# Loading all libraries into current R notebook
 library (tidyverse)
 library (rstatix)
 library (ggplot2)
 ```
 
-## HYPOTHESIS 1
+### Hypothesis 1: 
 
-### Data Summary Calculations
+#### Data Summary Calculations
 ```{r}
 #| output: false
 
@@ -90,18 +95,9 @@ eye_mean = mean(Ant$scape) #Create data frame for the mean size of ant eye
 print(eye_mean) #Output the value in 'eye_mean', the mean size of the eye
 ```
 
-### Test for Statistical Significance (Linear Regression)
+#### Test for Statistical Significance (Linear Regression)
 
-<!-- Eye Code + Output -->
-::: columns 
-::: {.column width="48%"}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
-:::
 
-::: {.column width="4%"}
-:::
-
-::: {.column width="48%"}
 ```{r}
 #| echo: true
 #| output: false
@@ -117,19 +113,8 @@ summary(mod_eye) #Displaying the results of the linear model calculation
 mod_eye = lm(eye ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude
 summary(mod_eye) #Displaying the results of the linear model calculation 
 ```
-:::
-:::
 
-<!-- Head Code + Output -->
-::: columns 
-::: {.column width="48%"}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
 :::
-
-::: {.column width="4%"}
-:::
-
-::: {.column width="48%"}
 ```{r}
 #| echo: true
 #| output: false
@@ -144,18 +129,7 @@ summary(mod_head) #Displaying the results of the linear model calculation
 mod_head = lm(head ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude
 summary(mod_head) #Displaying the results of the linear model calculation 
 ```
-:::
-:::
-<!-- Leg Code + Output -->
-::: columns 
-::: {.column width="48%"}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
-:::
 
-::: {.column width="4%"}
-:::
-
-::: {.column width="48%"}
 ```{r}
 #| echo: true
 #| output: false
@@ -170,19 +144,10 @@ summary(mod_leg) #Displaying the results of the linear model calculation
 mod_leg = lm(leg ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude
 summary(mod_leg) #Displaying the results of the linear model calculation 
 ```
-:::
-:::
+
 
 <!-- Scape Code + Output -->
-::: columns 
-::: {.column width="48%"}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse nibh risus, vulputate eu nulla sed, efficitur porta quam. In hac habitasse platea dictumst. Nulla id ex ipsum. Maecenas scelerisque, ante at aliquam tincidunt, leo sem sodales ante, suscipit aliquam mi sapien vitae arcu. Phasellus commodo ullamcorper porttitor. Cras aliquam elit vitae porta vulputate. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec euismod interdum metus auctor facilisis. Vivamus pellentesque ex quam, sit amet tristique quam gravida sed. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
-:::
 
-::: {.column width="4%"}
-:::
-
-::: {.column width="48%"}
 ```{r}
 #| echo: true
 #| output: false
@@ -197,12 +162,11 @@ summary(mod_scape) #Displaying the results of the linear model calculation
 mod_scape = lm(scape ~ altitude, data = Ant) #Creation of a linear model calculations for head measurements in relation to altitude
 summary(mod_scape) #Displaying the results of the linear model calculation 
 ```
-:::
-:::
+
 
 Result: All morphological features analyzed had a statistically significant relation to altitude (p-value < 0.05)
 
-### Figure Creation (Linear Regression)
+#### Figure Creation (Linear Regression)
 
 ```{r}
 #| echo: true 
@@ -239,17 +203,6 @@ ggplot(Ant,aes(x=altitude, y=scape)) +
 
 Result: Four figures depicting the relationship of ant morphology to altitude 
 
-# TL;DR
-::: columns 
-::: {.column width="48%"}
+## TL;DR
+
 This analysis is based on a several studies taking place in the Guadarra Mountains of Spain by the same group of scientists. Scientists measured the size of the different morphological structures of a multitude of ant genera across varying altitudes and regions of Guadarra mountain range as well as the resources ants were observed using. We aim to analyze how the size of the measured morphological features varies with altitude as well as to understand a genus-specific preference for certain resource types across ant taxa. 
-:::
-
-::: {.column width="4%"}
-
-:::
-
-::: {.column width="48%"}
-![](aphaenogaster_gibbosa.JPG "Title: Aphaenogaster gibossa"){fig-alt="Aphaenogaster gibossa" fig-align="center"}
-:::
-:::
