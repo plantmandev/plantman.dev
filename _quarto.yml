@@ -3,7 +3,7 @@ project:
   output-dir: docs
 
 website:
-  title: "Portfolio"
+  title: "Gabriel Guzman Blanco"
   favicon: "images/favicon.png"
   search:
     location: navbar
@@ -20,7 +20,7 @@ website:
         href: resume.qmd
     right:
       - icon: github
-        href: https://github.com/sirplantman
+        href: https://github.com/plantmandev
       - icon: linkedin
         href: https://www.linkedin.com/in/gabeguzman/
       - icon: clipboard2-data-fill # Kaggle icon does not exist in Bootstrap. Find alternative
