@@ -1,5 +1,5 @@
 <iframe 
-  width="790" 
-  height="900" 
+  width="890" 
+  height="960" 
   src="./resources/resume.pdf">
 </iframe>
