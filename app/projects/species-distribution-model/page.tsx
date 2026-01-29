@@ -23,7 +23,7 @@ export default function SDMPage() {
   const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
-    fetch('/species-distribution-model/occurrence-data/vanessa-cardui/vanessa-cardui.geojson')
+    fetch('/species-distribution-model/occurrence-data/danaus-plexippus.geojson')
       .then(res => res.json())
       .then((geojson: any) => {
         const points = geojson.features.map((f: any) => ({
