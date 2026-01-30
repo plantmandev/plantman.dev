@@ -9,7 +9,7 @@ export default function Home() {
         <ul>
           <li><a href="/about">About</a></li>
           <li><a href="/projects">Projects</a></li>
-          <li><a href="/projects/sdm">Butterfly SDM</a></li>
+          <li><a href="/projects/species-distribution-model">Butterfly SDM</a></li>
         </ul>
       </nav>
     </div>
