@@ -11,6 +11,7 @@
   "dependencies": {
     "@deck.gl/layers": "^9.2.6",
     "@deck.gl/react": "^9.2.6",
+    "@heroicons/react": "^2.2.0",
     "@heroui/accordion": "2.2.26",
     "@heroui/alert": "2.2.29",
     "@heroui/autocomplete": "2.3.31",

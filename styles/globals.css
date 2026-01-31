@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+*, body, html {
+  font-family: Consolas, Monaco, 'Courier New', monospace !important;
+}
+
 :root {
     --near-black: #121212;
     --dark-gray: #181818;
