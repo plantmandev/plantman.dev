@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Navbar as HeroUINavbar,
@@ -8,30 +8,32 @@ import {
   NavbarMenu,
   NavbarMenuItem,
   NavbarMenuToggle,
-} from "@heroui/navbar"
-import Image from "next/image"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
-import Logo from '@/public/plantman Logo (B&W).svg'
-import AppearanceSwitch from "./appearance-switch"
+} from "@heroui/navbar";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import Logo from "@/public/plantman Logo (B&W).svg";
+import AppearanceSwitch from "./appearance-switch";
 
 export const SiteLogo = () => {
-  return <Image src={Logo} alt="Plantman Logo" width={30} height={30} priority />
-}
+  return (
+    <Image src={Logo} alt="Plantman Logo" width={30} height={30} priority />
+  );
+};
 
 const navItems = [
   { label: "About", href: "/about" },
   { label: "Projects", href: "/projects" },
   { label: "Certificates", href: "/certificates" },
-] as const
+] as const;
 
 export function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
-    <HeroUINavbar 
+    <HeroUINavbar
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
       maxWidth="full"
@@ -54,9 +56,9 @@ export function Navbar() {
       {/* Desktop: Logo */}
       <NavbarContent className="hidden sm:flex" justify="start">
         <NavbarBrand>
-          <Link 
-            href="/" 
-            aria-label="Home" 
+          <Link
+            href="/"
+            aria-label="Home"
             className="flex items-center transition-opacity hover:opacity-70"
           >
             <SiteLogo />
@@ -104,5 +106,5 @@ export function Navbar() {
         ))}
       </NavbarMenu>
     </HeroUINavbar>
-  )
+  );
 }

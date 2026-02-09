@@ -1,11 +1,12 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
+import Link from "next/link";
 
 export function Footer() {
-  const currentYear = new Date().getFullYear()
-  const startYear = 2024
-  const yearDisplay = currentYear > startYear ? `${startYear}-${currentYear}` : startYear
+  const currentYear = new Date().getFullYear();
+  const startYear = 2024;
+  const yearDisplay =
+    currentYear > startYear ? `${startYear}-${currentYear}` : startYear;
 
   return (
     <footer className="footer">
@@ -19,5 +20,5 @@ export function Footer() {
         </p>
       </div>
     </footer>
-  )
+  );
 }

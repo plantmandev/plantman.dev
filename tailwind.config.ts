@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
+        sans: ["Consolas", "Monaco", "Courier New", "monospace"],
       },
     },
   },

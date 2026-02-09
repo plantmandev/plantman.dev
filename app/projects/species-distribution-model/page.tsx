@@ -185,7 +185,9 @@ export default function SDMPage() {
               }
             } else {
               colorRGB =
-                COLOR_PALETTE[speciesFromMetadata.length % COLOR_PALETTE.length];
+                COLOR_PALETTE[
+                  speciesFromMetadata.length % COLOR_PALETTE.length
+                ];
             }
 
             speciesFromMetadata.push({
