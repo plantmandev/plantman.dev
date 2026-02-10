@@ -55,6 +55,43 @@ nav[data-slot="base"] > div {
   justify-content: space-between;
 }
 
+/* Custom Hamburger Button */
+.hamburger-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 28px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hamburger-button span {
+  width: 28px;
+  height: 2px;
+  background-color: var(--foreground);
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.hamburger-button span.open:nth-child(1) {
+  transform: rotate(45deg) translate(6px, 6px);
+}
+
+.hamburger-button span.open:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-button span.open:nth-child(3) {
+  transform: rotate(-45deg) translate(6px, -6px);
+}
+
+.hamburger-button:hover span {
+  background-color: var(--muted);
+}
+
 @media (max-width: 1200px) {
   nav[data-slot="base"] > div {
     max-width: 70%;
