@@ -5,8 +5,6 @@ import {
   NavbarBrand,
   NavbarContent,
   NavbarItem,
-  NavbarMenu,
-  NavbarMenuItem,
 } from "@heroui/navbar";
 import Image from "next/image";
 import Link from "next/link";
@@ -29,22 +27,15 @@ const navItems = [
   { label: "Certificates", href: "/certificates" },
 ] as const;
 
-// Custom hamburger button
-const HamburgerButton = ({ 
-  isOpen, 
-  onClick 
-}: { 
-  isOpen: boolean; 
-  onClick: () => void 
-}) => (
+const HamburgerButton = ({ onClick }: { onClick: () => void }) => (
   <button
-    aria-label={isOpen ? "Close menu" : "Open menu"}
+    aria-label="Open menu"
     className="hamburger-button"
     onClick={onClick}
   >
-    <span className={isOpen ? "open" : ""} />
-    <span className={isOpen ? "open" : ""} />
-    <span className={isOpen ? "open" : ""} />
+    <span />
+    <span />
+    <span />
   </button>
 );
 
@@ -56,11 +47,8 @@ export function Navbar() {
     <HeroUINavbar
       className="bg-[var(--near-black)] border-b border-[var(--dark-gray)]"
       height="60px"
-      isMenuOpen={isMenuOpen}
       maxWidth="full"
-      onMenuOpenChange={setIsMenuOpen}
     >
-      {/* Mobile: Logo on Left */}
       <NavbarContent className="sm:hidden" justify="start">
         <NavbarBrand>
           <Link aria-label="Home" className="flex items-center" href="/">
@@ -69,7 +57,6 @@ export function Navbar() {
         </NavbarBrand>
       </NavbarContent>
 
-      {/* Desktop: Logo */}
       <NavbarContent className="hidden sm:flex" justify="start">
         <NavbarBrand>
           <Link
@@ -82,7 +69,6 @@ export function Navbar() {
         </NavbarBrand>
       </NavbarContent>
 
-      {/* Desktop: Nav Items - Center */}
       <NavbarContent className="hidden sm:flex gap-12" justify="center">
         {navItems.map((item) => (
           <NavbarItem key={item.href}>
@@ -98,38 +84,34 @@ export function Navbar() {
         ))}
       </NavbarContent>
 
-      {/* Right side - Theme toggle (desktop) and Hamburger (mobile) */}
       <NavbarContent justify="end">
-        {/* Theme toggle - desktop only */}
         <NavbarItem className="hidden sm:flex">
           <AppearanceSwitch />
         </NavbarItem>
 
-        {/* Custom Hamburger menu - mobile only */}
-        <div className="sm:hidden">
-          <HamburgerButton 
-            isOpen={isMenuOpen} 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          />
-        </div>
-      </NavbarContent>
+        <NavbarItem className="sm:hidden">
+          <div className="mobile-menu-container">
+            <HamburgerButton onClick={() => setIsMenuOpen(!isMenuOpen)} />
 
-      {/* Mobile Menu Dropdown */}
-      <NavbarMenu className="bg-[var(--near-black)] pt-8 gap-4">
-        {navItems.map((item) => (
-          <NavbarMenuItem key={item.href}>
-            <Link
-              className={`mobile-menu-item ${
-                pathname === item.href ? "active" : ""
-              }`}
-              href={item.href}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {item.label}
-            </Link>
-          </NavbarMenuItem>
-        ))}
-      </NavbarMenu>
+            {isMenuOpen && (
+              <div className="mobile-dropdown">
+                {navItems.map((item, index) => (
+                  <Link
+                    key={item.href}
+                    className={`mobile-dropdown-item ${
+                      index !== navItems.length - 1 ? "bordered" : ""
+                    }`}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </NavbarItem>
+      </NavbarContent>
     </HeroUINavbar>
   );
 }

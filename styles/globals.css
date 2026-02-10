@@ -55,13 +55,18 @@ nav[data-slot="base"] > div {
   justify-content: space-between;
 }
 
-/* Custom Hamburger Button */
+/* Mobile Menu Container */
+.mobile-menu-container {
+  position: relative;
+}
+
+/* Hamburger Button */
 .hamburger-button {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: space-between;
   width: 28px;
-  height: 24px;
+  height: 20px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -69,27 +74,38 @@ nav[data-slot="base"] > div {
 }
 
 .hamburger-button span {
-  width: 28px;
+  width: 100%;
   height: 2px;
   background-color: var(--foreground);
-  transition: all 0.3s ease;
-  transform-origin: center;
 }
 
-.hamburger-button span.open:nth-child(1) {
-  transform: rotate(45deg) translate(6px, 6px);
+/* Mobile Dropdown Menu */
+.mobile-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: var(--near-black);
+  border: 1px solid var(--dark-gray);
+  min-width: 200px;
+  z-index: 1000;
 }
 
-.hamburger-button span.open:nth-child(2) {
-  opacity: 0;
+.mobile-dropdown-item {
+  display: block;
+  color: var(--foreground);
+  text-decoration: none;
+  font-size: 16px;
+  padding: 16px 20px;
+  font-weight: 400;
+  transition: color 0.2s ease;
 }
 
-.hamburger-button span.open:nth-child(3) {
-  transform: rotate(-45deg) translate(6px, -6px);
+.mobile-dropdown-item.bordered {
+  border-bottom: 1px solid var(--dark-gray);
 }
 
-.hamburger-button:hover span {
-  background-color: var(--muted);
+.mobile-dropdown-item:hover {
+  color: var(--muted);
 }
 
 @media (max-width: 1200px) {
