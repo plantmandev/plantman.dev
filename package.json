@@ -9,6 +9,7 @@
     "lint": "eslint --fix"
   },
   "dependencies": {
+    "@deck.gl/geo-layers": "^9.2.6",
     "@deck.gl/layers": "^9.2.6",
     "@deck.gl/react": "^9.2.6",
     "@heroicons/react": "^2.2.0",

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, BitmapLayer } from "@deck.gl/layers";
+import { TileLayer } from "@deck.gl/geo-layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 
 const DeckGL = dynamic(
@@ -110,6 +111,8 @@ export default function SDMPage() {
   const [showTimeWindowMenu, setShowTimeWindowMenu] = useState(false);
   const [selectedTimeWindow, setSelectedTimeWindow] =
     useState<TimeWindowOption>(TIME_WINDOWS[1]);
+  const [showTerrain, setShowTerrain] = useState(true);
+  const [terrainOpacity, setTerrainOpacity] = useState(0.25);
 
   const [globalTimeRange, setGlobalTimeRange] = useState<[number, number]>([
     0, 1,
@@ -444,6 +447,38 @@ export default function SDMPage() {
       : selectedTimeWindow.days * 24 * 60 * 60 * 1000;
 
   const layers = [
+    // Terrain elevation layer
+    ...(showTerrain
+      ? [
+          new TileLayer({
+            id: "terrain-elevation",
+            data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+            minZoom: 0,
+            maxZoom: 15,
+            tileSize: 256,
+
+            renderSubLayers: (props) => {
+              const { bbox } = props.tile;
+              
+              // Convert bbox to [west, south, east, north] array format
+              const bounds: [number, number, number, number] = [
+                (bbox as any).west ?? (bbox as any).left,
+                (bbox as any).south ?? (bbox as any).bottom,
+                (bbox as any).east ?? (bbox as any).right,
+                (bbox as any).north ?? (bbox as any).top,
+              ];
+
+              return new BitmapLayer(props, {
+                image: props.data,
+                bounds,
+                opacity: terrainOpacity,
+              });
+            },
+          }),
+        ]
+      : []),
+
+    // Butterfly occurrences
     new ScatterplotLayer({
       id: "occurrences",
       data,
@@ -651,15 +686,50 @@ export default function SDMPage() {
 
       <div className="absolute top-4 right-4 bg-black/90 rounded shadow-lg text-white">
         <div className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400">Window:</span>
-            <button
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors flex items-center gap-2"
-              onClick={() => setShowTimeWindowMenu(!showTimeWindowMenu)}
-            >
-              {selectedTimeWindow.label}
-              <span className="text-xs">▼</span>
-            </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">Window:</span>
+              <button
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors flex items-center gap-2"
+                onClick={() => setShowTimeWindowMenu(!showTimeWindowMenu)}
+              >
+                {selectedTimeWindow.label}
+                <span className="text-xs">▼</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 pt-3 border-t border-gray-700">
+              <span className="text-sm text-gray-400">Terrain:</span>
+              <button
+                className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                  showTerrain
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-700 hover:bg-gray-600"
+                }`}
+                onClick={() => setShowTerrain(!showTerrain)}
+              >
+                {showTerrain ? "ON" : "OFF"}
+              </button>
+            </div>
+
+            {showTerrain && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400">Opacity:</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={terrainOpacity * 100}
+                  onChange={(e) =>
+                    setTerrainOpacity(parseInt(e.target.value) / 100)
+                  }
+                  className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                />
+                <span className="text-xs text-gray-400 w-8">
+                  {Math.round(terrainOpacity * 100)}%
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

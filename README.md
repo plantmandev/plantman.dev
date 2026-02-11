@@ -52,5 +52,29 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 
 Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
 
+# I want to improve our scientific understanding of butterflies and moths populations, using all the possible data available. I want this website to be a source for people to learn lepidoptera in the world. 
 
-# I want to improve our scientific understanding of butterflies and moths populations, using all the possible data available. I want this website to be a source for people to learn 
+# this project could be a good addition to iNaturalist 
+
+maybe add an extension that overlays my project with their website
+
+Consider adding an option for user requests
+
+
+### ADD larval host plants to GIS overlay
+
+# The biggest part of this project will likely be a powerful overlay process to show multiple variables play out like larval host plants and nectar plants. The base visualization of the butterfly population are great and the species level distribution models amazing, but there is more data to use. What else could we add? Perhaps a temperature layer showing changes in temperature over time 
+
+## Add digital elevation model layer
+
+## Can add land type layer (need to simplify)
+
+5. Nectar plant richness/diversity - Harder but valuable:
+
+Could derive from GBIF flowering plant data
+Seasonal bloom timing if you want to get fancy
+Adult butterfly distribution often correlates more with nectar availability than you'd expect
+
+Layers that would really showcase skills but are optional:
+
+Phenology data - Growing season start/end from MODIS satellite data
