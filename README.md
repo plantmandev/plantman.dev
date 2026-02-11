@@ -51,3 +51,6 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 ## License
 
 Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+
+
+# I want to improve our scientific understanding of butterflies and moths populations, using all the possible data available. I want this website to be a source for people to learn 

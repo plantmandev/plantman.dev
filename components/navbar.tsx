@@ -33,9 +33,38 @@ const HamburgerButton = ({ onClick }: { onClick: () => void }) => (
     className="hamburger-button"
     onClick={onClick}
   >
-    <span />
-    <span />
-    <span />
+    <svg
+      width="28"
+      height="20"
+      viewBox="0 0 28 20"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <line
+        x1="0"
+        y1="1"
+        x2="28"
+        y2="1"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="0"
+        y1="10"
+        x2="28"
+        y2="10"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <line
+        x1="0"
+        y1="19"
+        x2="28"
+        y2="19"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
   </button>
 );
 

@@ -59,24 +59,22 @@ nav[data-slot="base"] > div {
 .mobile-menu-container {
   position: relative;
 }
-
 /* Hamburger Button */
 .hamburger-button {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 28px;
-  height: 20px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0;
+  width: 28px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--foreground);
 }
 
-.hamburger-button span {
-  width: 100%;
-  height: 2px;
-  background-color: var(--foreground);
+.hamburger-button:hover {
+  color: var(--muted);
 }
 
 /* Mobile Dropdown Menu */
