@@ -15,28 +15,38 @@ const Map = dynamic(
   { ssr: false },
 );
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const INITIAL_VIEW = {
-  longitude: -100,
-  latitude: 40,
-  zoom: 4,
+  longitude: 10,
+  latitude: 20,
+  zoom: 1.8,
   pitch: 0,
   bearing: 0,
 };
 
 const COLOR_PALETTE: [number, number, number][] = [
-  [255, 140, 0],
-  [220, 20, 60],
-  [255, 215, 0],
-  [240, 240, 240],
-  [75, 0, 130],
-  [255, 105, 180],
-  [50, 205, 50],
-  [138, 43, 226],
-  [0, 191, 255],
-  [255, 69, 0],
-  [147, 112, 219],
-  [34, 139, 34],
+  [255, 140, 0], [220, 20, 60], [255, 215, 0], [240, 240, 240],
+  [75, 0, 130], [255, 105, 180], [50, 205, 50], [138, 43, 226],
+  [0, 191, 255], [255, 69, 0], [147, 112, 219], [34, 139, 34],
 ];
+
+const STEP_OPTIONS = [
+  { label: "1 Day",    days: 1 },
+  { label: "1 Week",   days: 7 },
+  { label: "2 Week(s)",days: 14 },
+  { label: "1 Month",  days: 30 },
+  { label: "3 Months", days: 90 },
+  { label: "All Time", days: -1 },
+];
+
+const YEARS = [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type Species = {
   scientificName: string;
@@ -44,221 +54,260 @@ type Species = {
   commonName: string;
   color: [number, number, number];
   actualObs?: number;
+  status?: string;
+  category?: string;
 };
 
-type TimeWindowOption = {
-  label: string;
-  days: number;
-};
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-const TIME_WINDOWS: TimeWindowOption[] = [
-  { label: "1 Week", days: 7 },
-  { label: "2 Weeks", days: 14 },
-  { label: "1 Month", days: 30 },
-  { label: "3 Months", days: 90 },
-  { label: "6 Months", days: 180 },
-  { label: "All Time", days: -1 },
-];
+function toFileName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-gbif";
+}
 
-function toFileName(speciesName: string): string {
+function hexToRgb(hex: string): [number, number, number] | null {
+  if (!hex || !hex.startsWith("#") || hex.length !== 7) return null;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+/** Single year block in the playback timeline */
+function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
+  const colors: Record<string, string> = {
+    complete:  "var(--off-white)",
+    ingested:  "#4ade80",
+    partial:   "#f59e0b",
+    missing:   "transparent",
+  };
+  const bg = colors[status] ?? "transparent";
+
   return (
-    speciesName
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "") + "-gbif"
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+      <span style={{ fontSize: "10px", color: "var(--light-gray)", fontFamily: "inherit" }}>
+        {year}
+      </span>
+      <div
+        style={{
+          width: "20px",
+          height: "20px",
+          background: status === "missing" ? "transparent" : bg,
+          border: "1px solid var(--light-gray)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "10px",
+          color: "var(--light-gray)",
+        }}
+      >
+        {status === "missing" ? "✕" : ""}
+      </div>
+    </div>
   );
 }
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error) {
-    // eslint-disable-next-line no-console
-    console.error("WebGL Error caught:", error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback || <div>Error loading map</div>;
-    }
-
-    return this.props.children;
-  }
+/** Species card in the selector grid */
+function SpeciesCard({
+  sp,
+  isSelected,
+  onClick,
+}: {
+  sp: Species;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: isSelected ? "rgba(242,242,242,0.08)" : "rgba(26,26,26,0.85)",
+        border: isSelected ? "1px solid var(--off-white)" : "1px solid var(--dark-gray)",
+        padding: "10px 12px",
+        textAlign: "left",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        display: "flex",
+        flexDirection: "column",
+        gap: "3px",
+        minHeight: "56px",
+      }}
+      onMouseEnter={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--light-gray)";
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--dark-gray)";
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <div
+          style={{
+            width: "8px", height: "8px", flexShrink: 0,
+            background: `rgb(${sp.color.join(",")})`,
+          }}
+        />
+        <span style={{
+          fontSize: "11px", fontWeight: isSelected ? 700 : 400,
+          color: "var(--off-white)", lineHeight: 1.3,
+          display: "-webkit-box", WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical", overflow: "hidden",
+        }}>
+          {sp.commonName}
+        </span>
+      </div>
+      <span style={{ fontSize: "10px", color: "var(--light-gray)", fontStyle: "italic", paddingLeft: "14px" }}>
+        {sp.scientificName}
+      </span>
+      {sp.actualObs && (
+        <span style={{ fontSize: "9px", color: "var(--light-gray)", paddingLeft: "14px" }}>
+          {sp.actualObs.toLocaleString()} obs
+        </span>
+      )}
+    </button>
+  );
 }
 
+/** Section in species selector */
+function SelectorSection({
+  title,
+  items,
+  selectedFileName,
+  onSelect,
+}: {
+  title: string;
+  items: Species[];
+  selectedFileName: string;
+  onSelect: (sp: Species) => void;
+}) {
+  return (
+    <div style={{ marginBottom: "20px" }}>
+      <div style={{
+        fontSize: "11px", fontWeight: 700, color: "var(--light-gray)",
+        letterSpacing: "0.12em", textTransform: "uppercase",
+        marginBottom: "10px", paddingBottom: "6px",
+        borderBottom: "1px solid var(--dark-gray)",
+      }}>
+        {title}
+      </div>
+      {items.length === 0 ? (
+        <div style={{ fontSize: "11px", color: "var(--light-gray)", fontStyle: "italic" }}>
+          No species loaded
+        </div>
+      ) : (
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "6px",
+        }}>
+          {items.map((sp) => (
+            <SpeciesCard
+              key={sp.fileName}
+              sp={sp}
+              isSelected={sp.fileName === selectedFileName}
+              onClick={() => onSelect(sp)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main Page
+// ---------------------------------------------------------------------------
+
 export default function SDMPage() {
-  const [mounted, setMounted] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
-  const [data, setData] = useState<any[]>([]);
-  const [timeRange, setTimeRange] = useState<[number, number]>([0, 1]);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [species, setSpecies] = useState<Species[]>([]);
+  const [mounted, setMounted]             = useState(false);
+  const [canvasReady, setCanvasReady]     = useState(false);
+  const [data, setData]                   = useState<any[]>([]);
+  const [timeRange, setTimeRange]         = useState<[number, number]>([0, 1]);
+  const [currentTime, setCurrentTime]     = useState(0);
+  const [isPlaying, setIsPlaying]         = useState(false);
+  const [species, setSpecies]             = useState<Species[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showSpeciesMenu, setShowSpeciesMenu] = useState(false);
-  const [showTimeWindowMenu, setShowTimeWindowMenu] = useState(false);
-  const [selectedTimeWindow, setSelectedTimeWindow] =
-    useState<TimeWindowOption>(TIME_WINDOWS[1]);
-  const [showTerrain, setShowTerrain] = useState(true);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
+  const [showStepMenu, setShowStepMenu]   = useState(false);
+  const [selectedStep, setSelectedStep]   = useState(STEP_OPTIONS[2]);
+  const [showTerrain, setShowTerrain]     = useState(false);
   const [terrainOpacity, setTerrainOpacity] = useState(0.25);
+  const [globalTimeRange, setGlobalTimeRange] = useState<[number, number]>([0, 1]);
 
-  const [globalTimeRange, setGlobalTimeRange] = useState<[number, number]>([
-    0, 1,
-  ]);
-  const [selectedYearRange, setSelectedYearRange] = useState<[number, number]>([
-    2015, 2026,
-  ]);
-  const [isDraggingStart, setIsDraggingStart] = useState(false);
-  const [isDraggingEnd, setIsDraggingEnd] = useState(false);
-
+  // mount
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 500);
   }, []);
 
+  // load species list from metadata CSV
   useEffect(() => {
-    const loadSpecies = async () => {
+    if (!mounted || !canvasReady) return;
+
+    const load = async () => {
       try {
-        setError(null);
+        const res  = await fetch("/species-distribution-model/occurrence-data/species-metadata.csv");
+        if (!res.ok) throw new Error(`Metadata fetch failed (${res.status})`);
+        const text = await res.text();
+        const lines = text.trim().split("\n");
+        if (lines.length < 2) throw new Error("Empty metadata");
 
-        const metadataResponse = await fetch(
-          "/species-distribution-model/occurrence-data/species-metadata.csv",
-        );
-
-        if (!metadataResponse.ok) {
-          throw new Error(
-            `Failed to load metadata (${metadataResponse.status})`,
-          );
-        }
-
-        const metadataText = await metadataResponse.text();
-        const lines = metadataText.trim().split("\n");
-
-        if (lines.length < 2) {
-          throw new Error("Metadata file is empty");
-        }
-
-        const speciesFromMetadata: Species[] = [];
-
+        const parsed: Species[] = [];
         for (let i = 1; i < lines.length; i++) {
-          try {
-            const line = lines[i].trim();
-            if (!line) continue;
+          const line = lines[i].trim();
+          if (!line) continue;
+          const v = line.split(",").map((s) => s.trim());
+          const scientificName = v[0];
+          const commonName     = v[1];
+          if (!scientificName || !commonName) continue;
 
-            const values = line.split(",").map((v) => v.trim());
+          const colorRGB = hexToRgb(v[11] ?? "") ?? COLOR_PALETTE[parsed.length % COLOR_PALETTE.length];
+          const actualObs = v[6] ? Math.round(parseFloat(v[6])) : undefined;
+          const status   = v[2] ?? "";
+          const category = v[17] ?? "lepidoptera"; // category column
 
-            const speciesName = values[0];
-            const commonName = values[1];
-
-            if (!speciesName || !commonName) {
-              continue;
-            }
-
-            const fileName = toFileName(speciesName);
-            const actualObs = values[6]
-              ? Math.round(parseFloat(values[6]))
-              : undefined;
-            const color = values[11] || undefined;
-
-            let colorRGB: [number, number, number];
-
-            if (color && color.startsWith("#") && color.length === 7) {
-              try {
-                const r = parseInt(color.slice(1, 3), 16);
-                const g = parseInt(color.slice(3, 5), 16);
-                const b = parseInt(color.slice(5, 7), 16);
-                colorRGB = [r, g, b];
-              } catch {
-                colorRGB =
-                  COLOR_PALETTE[
-                    speciesFromMetadata.length % COLOR_PALETTE.length
-                  ];
-              }
-            } else {
-              colorRGB =
-                COLOR_PALETTE[
-                  speciesFromMetadata.length % COLOR_PALETTE.length
-                ];
-            }
-
-            speciesFromMetadata.push({
-              scientificName: speciesName,
-              fileName: fileName,
-              commonName: commonName,
-              color: colorRGB,
-              actualObs: actualObs && !isNaN(actualObs) ? actualObs : undefined,
-            });
-          } catch (err) {
-            // eslint-disable-next-line no-console
-            console.warn(`Error parsing line ${i}:`, err);
-          }
+          parsed.push({
+            scientificName,
+            commonName,
+            fileName: toFileName(scientificName),
+            color: colorRGB,
+            actualObs: actualObs && !isNaN(actualObs) ? actualObs : undefined,
+            status,
+            category,
+          });
         }
 
-        speciesFromMetadata.sort((a, b) => {
-          const obsA = a.actualObs ?? 0;
-          const obsB = b.actualObs ?? 0;
-
-          if (obsB !== obsA) {
-            return obsB - obsA;
-          }
-
-          return a.commonName.localeCompare(b.commonName);
-        });
-
-        if (speciesFromMetadata.length === 0) {
-          throw new Error("No species found in metadata");
-        }
-
-        setSpecies(speciesFromMetadata);
-        setSelectedSpecies(speciesFromMetadata[0]);
+        parsed.sort((a, b) => (b.actualObs ?? 0) - (a.actualObs ?? 0));
+        setSpecies(parsed);
+        setSelectedSpecies(parsed[0] ?? null);
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Error loading species:", err);
         setError(err instanceof Error ? err.message : "Failed to load species");
         setLoading(false);
       }
     };
 
-    if (mounted && canvasReady) {
-      loadSpecies();
-    }
+    load();
   }, [mounted, canvasReady]);
 
+  // load occurrence data for selected species
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
 
-    const loadSpeciesData = async () => {
+    const load = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        const response = await fetch(
-          `/species-distribution-model/occurrence-data/${selectedSpecies.fileName}.geojson`,
+        const res = await fetch(
+          `/species-distribution-model/occurrence-data/${selectedSpecies.fileName}.geojson`
         );
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to load ${selectedSpecies.fileName}.geojson (${response.status})`,
-          );
-        }
-
-        const geojson = await response.json();
-
-        if (!geojson.features || !Array.isArray(geojson.features)) {
-          throw new Error("Invalid GeoJSON");
-        }
+        if (!res.ok) throw new Error(`GeoJSON fetch failed (${res.status})`);
+        const geojson = await res.json();
+        if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
 
         const points = geojson.features
           .map((f: any) => {
@@ -267,258 +316,127 @@ export default function SDMPage() {
                 position: f.geometry.coordinates,
                 timestamp: new Date(f.properties.eventDate).getTime(),
               };
-            } catch {
-              return null;
-            }
+            } catch { return null; }
           })
-          .filter((p: any) => p !== null);
+          .filter(Boolean);
 
-        const timestamps = points
-          .map((p: any) => p.timestamp)
-          .filter((t: any) => !isNaN(t) && t > 0);
+        const ts = points.map((p: any) => p.timestamp).filter((t: any) => !isNaN(t) && t > 0);
+        if (ts.length === 0) throw new Error("No valid timestamps");
 
-        if (timestamps.length === 0) {
-          throw new Error("No valid timestamps");
-        }
-
-        const minTime = Math.min(...timestamps);
-        const maxTime = Math.max(...timestamps);
-
+        const min = Math.min(...ts);
+        const max = Math.max(...ts);
         setData(points);
-        setTimeRange([minTime, maxTime]);
-        setGlobalTimeRange([minTime, maxTime]);
-
-        const minYear = new Date(minTime).getFullYear();
-        const maxYear = new Date(maxTime).getFullYear();
-        setSelectedYearRange([minYear, maxYear]);
-
-        setCurrentTime(minTime);
+        setTimeRange([min, max]);
+        setGlobalTimeRange([min, max]);
+        setCurrentTime(min);
         setLoading(false);
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Error:", err);
         setError(err instanceof Error ? err.message : "Failed to load data");
         setLoading(false);
       }
     };
 
-    loadSpeciesData();
+    load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  useEffect(() => {
-    if (globalTimeRange[0] === 0) return;
-
-    const startTime = new Date(selectedYearRange[0], 0, 1).getTime();
-    const endTime = new Date(
-      selectedYearRange[1],
-      11,
-      31,
-      23,
-      59,
-      59,
-    ).getTime();
-
-    const newRange: [number, number] = [
-      Math.max(startTime, globalTimeRange[0]),
-      Math.min(endTime, globalTimeRange[1]),
-    ];
-
-    setTimeRange(newRange);
-    setCurrentTime(newRange[0]);
-  }, [selectedYearRange, globalTimeRange]);
-
+  // playback
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
-
     const interval = setInterval(() => {
       setCurrentTime((t) => {
-        const newTime = t + 7 * 24 * 60 * 60 * 1000;
-
-        if (newTime > timeRange[1]) {
-          return timeRange[0];
-        }
-
-        return newTime;
+        const next = t + selectedStep.days * 24 * 60 * 60 * 1000;
+        return next > timeRange[1] ? timeRange[0] : next;
       });
-    }, 1000 / 10);
-
+    }, 100);
     return () => clearInterval(interval);
-  }, [isPlaying, timeRange, loading]);
+  }, [isPlaying, timeRange, loading, selectedStep]);
 
-  useEffect(() => {
-    const handleMouseUp = () => {
-      setIsDraggingStart(false);
-      setIsDraggingEnd(false);
-    };
-
-    if (isDraggingStart || isDraggingEnd) {
-      window.addEventListener("mouseup", handleMouseUp);
-
-      return () => window.removeEventListener("mouseup", handleMouseUp);
-    }
-  }, [isDraggingStart, isDraggingEnd]);
-
-  const handleStartDrag = useCallback(() => {
-    setIsDraggingStart(true);
+  const handleSelectSpecies = useCallback((sp: Species) => {
+    setSelectedSpecies(sp);
     setIsPlaying(false);
   }, []);
-
-  const handleEndDrag = useCallback(() => {
-    setIsDraggingEnd(true);
-    setIsPlaying(false);
-  }, []);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDraggingStart && !isDraggingEnd) return;
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const percent = Math.max(0, Math.min(1, x / rect.width));
-
-      const minYear = new Date(globalTimeRange[0]).getFullYear();
-      const maxYear = new Date(globalTimeRange[1]).getFullYear();
-      const yearRange = maxYear - minYear;
-      const year = Math.round(minYear + percent * yearRange);
-
-      if (isDraggingStart) {
-        setSelectedYearRange([
-          Math.min(year, selectedYearRange[1]),
-          selectedYearRange[1],
-        ]);
-      } else if (isDraggingEnd) {
-        setSelectedYearRange([
-          selectedYearRange[0],
-          Math.max(year, selectedYearRange[0]),
-        ]);
-      }
-    },
-    [isDraggingStart, isDraggingEnd, globalTimeRange, selectedYearRange],
-  );
 
   if (!mounted || !canvasReady) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-white">
-            Initializing...
-          </div>
-        </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", background: "var(--background)" }}>
+        <span style={{ color: "var(--light-gray)", fontSize: "13px" }}>Initializing canvas…</span>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center max-w-md px-4">
-          <div className="text-2xl font-semibold text-red-400 mb-2">
-            Error Loading Data
-          </div>
-          <div className="text-gray-300 mb-4">{error}</div>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!selectedSpecies || loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-white">
-            {!selectedSpecies
-              ? "Loading species..."
-              : `Loading ${selectedSpecies.commonName}...`}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // DeckGL layers
+  // ---------------------------------------------------------------------------
 
   const timeWindowMs =
-    selectedTimeWindow.days === -1
+    selectedStep.days === -1
       ? timeRange[1] - timeRange[0]
-      : selectedTimeWindow.days * 24 * 60 * 60 * 1000;
+      : selectedStep.days * 24 * 60 * 60 * 1000;
 
   const layers = [
-    // Terrain elevation layer
-    ...(showTerrain
-      ? [
-          new TileLayer({
-            id: "terrain-elevation",
-            data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-            minZoom: 0,
-            maxZoom: 15,
-            tileSize: 256,
-
-            renderSubLayers: (props) => {
-              const { bbox } = props.tile;
-              
-              // Convert bbox to [west, south, east, north] array format
-              const bounds: [number, number, number, number] = [
-                (bbox as any).west ?? (bbox as any).left,
-                (bbox as any).south ?? (bbox as any).bottom,
-                (bbox as any).east ?? (bbox as any).right,
-                (bbox as any).north ?? (bbox as any).top,
-              ];
-
-              return new BitmapLayer(props, {
-                image: props.data,
-                bounds,
-                opacity: terrainOpacity,
-              });
-            },
-          }),
-        ]
-      : []),
-
-    // Butterfly occurrences
+    ...(showTerrain ? [
+      new TileLayer({
+        id: "terrain",
+        data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+        minZoom: 0, maxZoom: 15, tileSize: 256,
+        renderSubLayers: (props: any) => {
+          const { bbox } = props.tile;
+          const bounds: [number,number,number,number] = [
+            bbox.west ?? bbox.left, bbox.south ?? bbox.bottom,
+            bbox.east ?? bbox.right, bbox.north ?? bbox.top,
+          ];
+          return new BitmapLayer(props, { image: props.data, bounds, opacity: terrainOpacity });
+        },
+      }),
+    ] : []),
     new ScatterplotLayer({
       id: "occurrences",
       data,
       getPosition: (d: any) => d.position,
       getFilterValue: (d: any) => d.timestamp,
-      filterRange:
-        selectedTimeWindow.days === -1
-          ? [timeRange[0], currentTime]
-          : [currentTime - timeWindowMs, currentTime],
+      filterRange: selectedStep.days === -1
+        ? [timeRange[0], currentTime]
+        : [currentTime - timeWindowMs, currentTime],
       extensions: [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor: selectedSpecies.color,
-      getRadius: 2500,
+      getFillColor: selectedSpecies?.color ?? [255,255,255],
+      getRadius: 3000,
       radiusMinPixels: 1.5,
-      radiusMaxPixels: 3,
-      opacity: 0.7,
+      radiusMaxPixels: 4,
+      opacity: 0.75,
       pickable: false,
     }),
   ];
 
-  const currentDate = new Date(currentTime).toLocaleDateString();
-  const visibleCount = data.filter((d: any) => {
-    return d.timestamp >= timeRange[0] && d.timestamp <= timeRange[1];
-  }).length;
+  // ---------------------------------------------------------------------------
+  // Derived display values
+  // ---------------------------------------------------------------------------
 
-  const minYear = new Date(globalTimeRange[0]).getFullYear();
-  const maxYear = new Date(globalTimeRange[1]).getFullYear();
-  const yearRange = maxYear - minYear || 1;
+  const currentDate    = new Date(currentTime).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+  const progressPct    = timeRange[1] > timeRange[0]
+    ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
+    : 0;
+
+  // Year block statuses — placeholder until DB integration
+  const yearStatuses: Record<number, "complete" | "ingested" | "missing" | "partial"> = {};
+  YEARS.forEach((y) => {
+    const hasData = data.some((d: any) => new Date(d.timestamp).getFullYear() === y);
+    yearStatuses[y] = hasData ? "ingested" : "missing";
+  });
+
+  // Split species by category
+  const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
+  const nectarPlants = species.filter((s) => s.category === "nectar_plant");
+  const hostPlants   = species.filter((s) => s.category === "host_plant");
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
 
   return (
-    <div
-      className="relative w-full bg-gray-900"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
-      <ErrorBoundary
-        fallback={
-          <div className="flex items-center justify-center h-full">
-            <div className="text-white">Map loading...</div>
-          </div>
-        }
-      >
+    <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)", overflow: "hidden" }}>
+
+      {/* ── MAP BACKGROUND ── */}
+      <div style={{ position: "absolute", inset: 0 }}>
         <DeckGL
           controller={true}
           initialViewState={INITIAL_VIEW}
@@ -528,232 +446,328 @@ export default function SDMPage() {
         >
           <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
         </DeckGL>
-      </ErrorBoundary>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/90 px-8 py-4 rounded shadow-lg text-white flex flex-col gap-4">
-        <div className="flex items-center gap-6">
-          <button
-            className="w-12 h-12 bg-blue-600 text-white rounded flex items-center justify-center text-lg font-semibold hover:bg-blue-700 transition-colors"
-            onClick={() => setIsPlaying(!isPlaying)}
-          >
-            {isPlaying ? "||" : "▶"}
-          </button>
-
-          <div className="min-w-[180px]">
-            <div className="text-sm font-medium">{currentDate}</div>
-            <div className="text-xs text-gray-400">
-              {visibleCount.toLocaleString()} observations
-            </div>
-          </div>
-
-          <button
-            className="w-12 h-12 bg-gray-700 text-white rounded flex items-center justify-center hover:bg-gray-600 transition-colors"
-            onClick={() => setCurrentTime(timeRange[0])}
-          >
-            ⟲
-          </button>
-
-          <div className="w-40 bg-gray-700 rounded h-2">
-            <div
-              className="bg-blue-600 h-full rounded transition-all"
-              style={{
-                width: `${((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="border-t border-gray-700 pt-4">
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-400 whitespace-nowrap">
-              Year Range:
-            </span>
-            <div className="flex-1 min-w-[300px]">
-              <div
-                className="relative h-8 cursor-pointer select-none"
-                onMouseMove={handleMouseMove}
-              >
-                <div className="absolute top-1/2 -translate-y-1/2 w-full h-1 bg-gray-700 rounded" />
-
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 h-1 bg-blue-600 rounded"
-                  style={{
-                    left: `${((selectedYearRange[0] - minYear) / yearRange) * 100}%`,
-                    width: `${((selectedYearRange[1] - selectedYearRange[0]) / yearRange) * 100}%`,
-                  }}
-                />
-
-                <button
-                  aria-label="Adjust start year"
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-600 rounded-full cursor-grab active:cursor-grabbing hover:scale-110 transition-transform"
-                  style={{
-                    left: `${((selectedYearRange[0] - minYear) / yearRange) * 100}%`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                  type="button"
-                  onMouseDown={handleStartDrag}
-                />
-
-                <button
-                  aria-label="Adjust end year"
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-600 rounded-full cursor-grab active:cursor-grabbing hover:scale-110 transition-transform"
-                  style={{
-                    left: `${((selectedYearRange[1] - minYear) / yearRange) * 100}%`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                  type="button"
-                  onMouseDown={handleEndDrag}
-                />
-
-                <div className="absolute -bottom-5 left-0 text-xs text-gray-500">
-                  {minYear}
-                </div>
-                <div className="absolute -bottom-5 right-0 text-xs text-gray-500">
-                  {maxYear}
-                </div>
-              </div>
-            </div>
-            <div className="text-sm font-medium whitespace-nowrap min-w-[100px] text-right">
-              {selectedYearRange[0]} - {selectedYearRange[1]}
-            </div>
-          </div>
-        </div>
       </div>
 
-      <div className="absolute top-4 left-4 bg-black/90 rounded shadow-lg text-white max-w-md">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <div className="text-base font-semibold">
+      {/* ── LEFT PANEL — species info + playback ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          width: "340px",
+          maxHeight: "calc(100vh - 40px)",
+          overflowY: "auto",
+          overflowX: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0",
+          zIndex: 10,
+          scrollbarWidth: "thin",
+          scrollbarColor: "var(--dark-gray) transparent",
+        }}
+      >
+        {/* Species photo */}
+        <div
+          style={{
+            width: "100%",
+            height: "200px",
+            background: "var(--dark-gray)",
+            border: "1px solid var(--dark-gray)",
+            borderBottom: "none",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {/* Wikipedia button */}
+          <a
+            href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              position: "absolute",
+              bottom: "8px",
+              right: "8px",
+              width: "28px",
+              height: "28px",
+              border: "1px solid var(--off-white)",
+              background: "rgba(13,13,13,0.85)",
+              color: "var(--off-white)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "13px",
+              fontWeight: 700,
+              textDecoration: "none",
+              zIndex: 2,
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "var(--off-white)";
+              (e.currentTarget as HTMLAnchorElement).style.color = "var(--background)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(13,13,13,0.85)";
+              (e.currentTarget as HTMLAnchorElement).style.color = "var(--off-white)";
+            }}
+          >
+            W
+          </a>
+          {/* Placeholder — swap for <img> when photo data is wired in */}
+          <div style={{
+            width: "100%", height: "100%",
+            background: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{ fontSize: "11px", color: "var(--light-gray)", fontStyle: "italic" }}>
+              photo unavailable
+            </span>
+          </div>
+        </div>
+
+        {/* Species name + description */}
+        <div
+          style={{
+            background: "rgba(13,13,13,0.92)",
+            border: "1px solid var(--dark-gray)",
+            borderTop: "none",
+            padding: "14px 16px",
+          }}
+        >
+          {selectedSpecies ? (
+            <>
+              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--off-white)", lineHeight: 1.2 }}>
                 {selectedSpecies.commonName}
               </div>
-              <div className="text-sm italic text-gray-400 mt-1">
+              <div style={{ fontSize: "12px", fontStyle: "italic", color: "var(--light-gray)", marginTop: "3px" }}>
                 {selectedSpecies.scientificName}
               </div>
-              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-700">
-                {data.length.toLocaleString()} total records
+              <div style={{
+                fontSize: "11px", color: "var(--light-gray)", marginTop: "10px",
+                lineHeight: 1.6,
+              }}>
+                {/* Description placeholder — wire to species DB later */}
+                Species description will be loaded from the database.
               </div>
-            </div>
+            </>
+          ) : (
+            <div style={{ fontSize: "12px", color: "var(--light-gray)" }}>Loading…</div>
+          )}
+        </div>
+
+        {/* Playback controls */}
+        <div
+          style={{
+            background: "rgba(13,13,13,0.92)",
+            border: "1px solid var(--dark-gray)",
+            borderTop: "none",
+            padding: "12px 14px",
+          }}
+        >
+          {/* Top row: play, stats, step */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
             <button
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors whitespace-nowrap"
-              onClick={() => setShowSpeciesMenu(!showSpeciesMenu)}
+              onClick={() => setIsPlaying(!isPlaying)}
+              style={{
+                width: "32px", height: "32px",
+                border: "1px solid var(--light-gray)",
+                background: "transparent",
+                color: "var(--off-white)",
+                cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: "12px", flexShrink: 0,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--off-white)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--background)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--off-white)"; }}
             >
-              Change
+              {isPlaying ? "||" : "▶"}
             </button>
-          </div>
-        </div>
 
-        {showSpeciesMenu && (
-          <div className="border-t border-gray-700 max-h-96 overflow-y-auto">
-            {species.map((sp) => (
-              <button
-                key={sp.fileName}
-                className={`w-full px-6 py-3 text-left hover:bg-gray-800 transition-colors border-l-4 ${
-                  sp.fileName === selectedSpecies.fileName
-                    ? "bg-gray-800 border-blue-600"
-                    : "border-transparent"
-                }`}
-                onClick={() => {
-                  setSelectedSpecies(sp);
-                  setShowSpeciesMenu(false);
-                  setIsPlaying(false);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-4 h-4 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: `rgb(${sp.color.join(",")})` }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {sp.commonName}
-                    </div>
-                    <div className="text-xs italic text-gray-400 truncate">
-                      {sp.scientificName}
-                    </div>
-                    {sp.actualObs !== undefined && (
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {sp.actualObs.toLocaleString()} obs
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="absolute top-4 right-4 bg-black/90 rounded shadow-lg text-white">
-        <div className="px-6 py-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">Window:</span>
-              <button
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors flex items-center gap-2"
-                onClick={() => setShowTimeWindowMenu(!showTimeWindowMenu)}
-              >
-                {selectedTimeWindow.label}
-                <span className="text-xs">▼</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 pt-3 border-t border-gray-700">
-              <span className="text-sm text-gray-400">Terrain:</span>
-              <button
-                className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                  showTerrain
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-700 hover:bg-gray-600"
-                }`}
-                onClick={() => setShowTerrain(!showTerrain)}
-              >
-                {showTerrain ? "ON" : "OFF"}
-              </button>
-            </div>
-
-            {showTerrain && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400">Opacity:</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={terrainOpacity * 100}
-                  onChange={(e) =>
-                    setTerrainOpacity(parseInt(e.target.value) / 100)
-                  }
-                  className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                />
-                <span className="text-xs text-gray-400 w-8">
-                  {Math.round(terrainOpacity * 100)}%
-                </span>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "9px", color: "var(--light-gray)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Total Records</span>
+                <span style={{ fontSize: "9px", color: "var(--light-gray)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Date</span>
               </div>
-            )}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "11px", color: "var(--off-white)", fontWeight: 600 }}>
+                  {loading ? "…" : data.length.toLocaleString()}
+                </span>
+                <span style={{ fontSize: "11px", color: "var(--off-white)" }}>{currentDate}</span>
+              </div>
+            </div>
+
+            {/* Step selector */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <button
+                onClick={() => setShowStepMenu(!showStepMenu)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  border: "1px solid var(--light-gray)",
+                  background: "transparent",
+                  color: "var(--off-white)",
+                  padding: "4px 8px",
+                  fontSize: "10px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Step<br />
+                {selectedStep.label} ▼
+              </button>
+              {showStepMenu && (
+                <div style={{
+                  position: "absolute", bottom: "calc(100% + 4px)", right: 0,
+                  background: "var(--near-black)", border: "1px solid var(--dark-gray)",
+                  zIndex: 20, minWidth: "120px",
+                }}>
+                  {STEP_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => { setSelectedStep(opt); setShowStepMenu(false); }}
+                      style={{
+                        display: "block", width: "100%",
+                        padding: "8px 12px", textAlign: "left",
+                        fontSize: "11px", background: "transparent",
+                        color: opt.label === selectedStep.label ? "var(--off-white)" : "var(--light-gray)",
+                        fontWeight: opt.label === selectedStep.label ? 700 : 400,
+                        cursor: "pointer", border: "none",
+                        borderBottom: "1px solid var(--dark-gray)",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Color swatch */}
+            <div style={{
+              width: "20px", height: "20px",
+              border: "1px solid var(--light-gray)",
+              flexShrink: 0,
+              background: selectedSpecies ? `rgb(${selectedSpecies.color.join(",")})` : "var(--dark-gray)",
+            }} />
+          </div>
+
+          {/* Progress bar */}
+          <div
+            style={{
+              width: "100%", height: "3px",
+              background: "var(--dark-gray)",
+              marginBottom: "10px",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct  = (e.clientX - rect.left) / rect.width;
+              setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
+              setIsPlaying(false);
+            }}
+          >
+            <div style={{ width: `${progressPct}%`, height: "100%", background: "var(--off-white)", transition: "width 0.1s linear" }} />
+          </div>
+
+          {/* Year blocks */}
+          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+            {YEARS.map((y) => (
+              <YearBlock key={y} year={y} status={yearStatuses[y]} />
+            ))}
           </div>
         </div>
 
-        {showTimeWindowMenu && (
-          <div className="border-t border-gray-700">
-            {TIME_WINDOWS.map((window) => (
-              <button
-                key={window.label}
-                className={`w-full px-6 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors ${
-                  window.label === selectedTimeWindow.label
-                    ? "bg-gray-800 text-blue-400"
-                    : ""
-                }`}
-                onClick={() => {
-                  setSelectedTimeWindow(window);
-                  setShowTimeWindowMenu(false);
-                }}
-              >
-                {window.label}
-              </button>
-            ))}
+
+        {/* Species selector — scrollable list below playback */}
+        <div
+          style={{
+            background: "rgba(13,13,13,0.92)",
+            border: "1px solid var(--dark-gray)",
+            borderTop: "none",
+            padding: "16px",
+          }}
+        >
+          <SelectorSection
+            title="Butterflies"
+            items={butterflies}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+          <SelectorSection
+            title="Nectar Plants"
+            items={nectarPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+          <SelectorSection
+            title="Larval Host Plants"
+            items={hostPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+        </div>
+      </div>
+
+      {/* ── TOP-RIGHT controls ── */}
+      <div
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          background: "rgba(13,13,13,0.92)",
+          border: "1px solid var(--dark-gray)",
+          padding: "12px 14px",
+          zIndex: 10,
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          minWidth: "160px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+          <span style={{ fontSize: "11px", color: "var(--light-gray)" }}>Terrain</span>
+          <button
+            onClick={() => setShowTerrain(!showTerrain)}
+            style={{
+              padding: "3px 10px",
+              border: "1px solid var(--light-gray)",
+              background: showTerrain ? "var(--off-white)" : "transparent",
+              color: showTerrain ? "var(--background)" : "var(--off-white)",
+              fontSize: "10px",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              letterSpacing: "0.08em",
+            }}
+          >
+            {showTerrain ? "ON" : "OFF"}
+          </button>
+        </div>
+        {showTerrain && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "10px", color: "var(--light-gray)" }}>Opacity</span>
+            <input
+              type="range" min="0" max="100"
+              value={Math.round(terrainOpacity * 100)}
+              onChange={(e) => setTerrainOpacity(parseInt(e.target.value) / 100)}
+              style={{ flex: 1, height: "2px", accentColor: "var(--off-white)" }}
+            />
+            <span style={{ fontSize: "10px", color: "var(--light-gray)", minWidth: "28px", textAlign: "right" }}>
+              {Math.round(terrainOpacity * 100)}%
+            </span>
           </div>
         )}
       </div>
+
+      {/* Error overlay */}
+      {error && (
+        <div style={{
+          position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)",
+          background: "rgba(13,13,13,0.95)", border: "1px solid var(--light-gray)",
+          padding: "10px 18px", zIndex: 20,
+          fontSize: "11px", color: "var(--light-gray)",
+        }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
