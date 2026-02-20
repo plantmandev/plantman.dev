@@ -39,6 +39,17 @@ body {
   padding: 0;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent body scroll */
+}
+
+/* Main content area — grows to fill space between nav and footer */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Navbar Inner Container */
@@ -376,7 +387,7 @@ nav[data-slot="base"] > div {
   width: 100%;
   border-top: 1px solid var(--border);
   background-color: var(--background);
-  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .footer-content {
@@ -430,6 +441,7 @@ nav[data-slot="base"] > div {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  overflow: hidden; /* Prevent page scroll — only left panel scrolls internally */
 }
 
 /* Selection */
@@ -470,4 +482,526 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
+}
+
+
+/* ==========================================================================
+   SDM PAGE — Species Distribution Model visualization
+   ========================================================================== */
+
+/* Outer wrapper — fills main container exactly */
+.sdm-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Shared panel base — semi-transparent dark card with border */
+.sdm-panel {
+  background: rgba(13, 13, 13, 0.92);
+  border: 1px solid var(--dark-gray);
+  font-family: inherit;
+}
+
+/* Left column — scrollable, fixed width, fills available height */
+.sdm-left {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 340px;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dark-gray) transparent;
+}
+
+.sdm-left::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sdm-left::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sdm-left::-webkit-scrollbar-thumb {
+  background: var(--dark-gray);
+}
+
+/* Stacked blocks inside left column — share borders, no gap */
+.sdm-block {
+  background: rgba(13, 13, 13, 0.92);
+  border: 1px solid var(--dark-gray);
+  border-top: none;
+  flex-shrink: 0;
+}
+
+.sdm-block:first-child {
+  border-top: 1px solid var(--dark-gray);
+}
+
+/* Photo block */
+.sdm-photo {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdm-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sdm-photo-unavailable {
+  font-size: 11px;
+  color: var(--light-gray);
+  font-style: italic;
+}
+
+/* Wikipedia button */
+.sdm-wiki-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--off-white);
+  background: rgba(13, 13, 13, 0.85);
+  color: var(--off-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  z-index: 2;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sdm-wiki-btn:hover {
+  background: var(--off-white);
+  color: var(--background);
+}
+
+/* Info block — name, scientific name, description */
+.sdm-info {
+  padding: 14px 16px;
+}
+
+.sdm-common-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--off-white);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.sdm-scientific-name {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--light-gray);
+  margin: 3px 0 0 0;
+}
+
+.sdm-description {
+  font-size: 11px;
+  color: var(--light-gray);
+  margin: 10px 0 0 0;
+  line-height: 1.6;
+}
+
+/* Playback block */
+.sdm-playback {
+  padding: 12px 14px;
+}
+
+.sdm-playback-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Play/pause button */
+.sdm-play-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--light-gray);
+  background: transparent;
+  color: var(--off-white);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  font-family: inherit;
+}
+
+.sdm-play-btn:hover {
+  background: var(--off-white);
+  color: var(--background);
+}
+
+/* Stats (total records / date) */
+.sdm-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sdm-stats-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sdm-stats-label {
+  font-size: 9px;
+  color: var(--light-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sdm-stats-values {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sdm-stats-value {
+  font-size: 11px;
+  color: var(--off-white);
+  font-weight: 600;
+}
+
+/* Step dropdown trigger */
+.sdm-step-btn {
+  border: 1px solid var(--light-gray);
+  background: transparent;
+  color: var(--off-white);
+  padding: 4px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  flex-shrink: 0;
+  text-align: left;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sdm-step-btn:hover {
+  background: rgba(242, 242, 242, 0.08);
+}
+
+/* Step dropdown menu */
+.sdm-dropdown {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: var(--near-black);
+  border: 1px solid var(--dark-gray);
+  z-index: 20;
+  min-width: 120px;
+}
+
+.sdm-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  background: transparent;
+  color: var(--light-gray);
+  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid var(--dark-gray);
+  font-family: inherit;
+  transition: color 0.1s ease;
+}
+
+.sdm-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.sdm-dropdown-item:hover,
+.sdm-dropdown-item.active {
+  color: var(--off-white);
+  font-weight: 700;
+}
+
+/* Color swatch */
+.sdm-color-swatch {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--light-gray);
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.sdm-progress-track {
+  width: 100%;
+  height: 3px;
+  background: var(--dark-gray);
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.sdm-progress-fill {
+  height: 100%;
+  background: var(--off-white);
+  transition: width 0.1s linear;
+}
+
+/* Year blocks row */
+.sdm-years {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sdm-year-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sdm-year-label {
+  font-size: 10px;
+  color: var(--light-gray);
+}
+
+.sdm-year-cell {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--light-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--light-gray);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sdm-year-cell:hover {
+  border-color: var(--off-white);
+  transform: scale(1.1);
+}
+
+.sdm-year-cell.complete  { background: var(--off-white); }
+.sdm-year-cell.ingested  { background: #4ade80; border-color: #4ade80; }
+.sdm-year-cell.partial   { background: #f59e0b; border-color: #f59e0b; }
+.sdm-year-cell.missing   { background: transparent; }
+
+/* Selected year range */
+.sdm-year-cell.selected {
+  border: 2px solid var(--off-white);
+  box-shadow: 0 0 0 1px var(--off-white);
+}
+
+.sdm-year-cell.in-range {
+  outline: 2px solid rgba(242, 242, 242, 0.3);
+  outline-offset: -2px;
+}
+
+/* Species selector block */
+.sdm-selector {
+  padding: 16px;
+}
+
+/* Section heading inside selector */
+.sdm-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--light-gray);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 10px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--dark-gray);
+}
+
+.sdm-section-empty {
+  font-size: 11px;
+  color: var(--light-gray);
+  font-style: italic;
+}
+
+.sdm-section + .sdm-section {
+  margin-top: 20px;
+}
+
+/* 3-column species card grid */
+.sdm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+/* Individual species card */
+.sdm-card {
+  background: rgba(26, 26, 26, 0.85);
+  border: 1px solid var(--dark-gray);
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 56px;
+  font-family: inherit;
+}
+
+.sdm-card:hover {
+  border-color: var(--light-gray);
+}
+
+.sdm-card.selected {
+  background: rgba(242, 242, 242, 0.08);
+  border-color: var(--off-white);
+}
+
+.sdm-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sdm-card-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.sdm-card-name {
+  font-size: 11px;
+  color: var(--off-white);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sdm-card.selected .sdm-card-name {
+  font-weight: 700;
+}
+
+.sdm-card-scientific {
+  font-size: 10px;
+  color: var(--light-gray);
+  font-style: italic;
+  padding-left: 14px;
+}
+
+.sdm-card-obs {
+  font-size: 9px;
+  color: var(--light-gray);
+  padding-left: 14px;
+}
+
+/* Top-right terrain toggle */
+.sdm-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 160px;
+  padding: 12px 14px;
+}
+
+.sdm-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sdm-control-label {
+  font-size: 11px;
+  color: var(--light-gray);
+}
+
+.sdm-toggle-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--light-gray);
+  background: transparent;
+  color: var(--off-white);
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.08em;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sdm-toggle-btn.on {
+  background: var(--off-white);
+  color: var(--background);
+}
+
+/* Opacity slider row */
+.sdm-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sdm-opacity-row input[type="range"] {
+  flex: 1;
+  height: 2px;
+  accent-color: var(--off-white);
+}
+
+.sdm-opacity-value {
+  font-size: 10px;
+  color: var(--light-gray);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Error toast */
+.sdm-error {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid var(--light-gray);
+  padding: 10px 18px;
+  z-index: 20;
+  font-size: 11px;
+  color: var(--light-gray);
+  white-space: nowrap;
+}
+
+/* Loading / init screens */
+.sdm-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--background);
+}
+
+.sdm-loading-text {
+  font-size: 13px;
+  color: var(--light-gray);
 }
