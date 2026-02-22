@@ -12,7 +12,8 @@ export async function GET(
   { params }: { params: { species: string } }
 ) {
   try {
-    const speciesName = decodeURIComponent(params.species);
+    const { species } = await params;
+    const speciesName = decodeURIComponent(species);
     
     const speciesResult = await query<{ id: number }>(`
       SELECT id FROM species WHERE scientific_name = $1

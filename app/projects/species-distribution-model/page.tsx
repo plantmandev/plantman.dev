@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ScatterplotLayer, BitmapLayer } from "@deck.gl/layers";
 import { TileLayer } from "@deck.gl/geo-layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
+import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
@@ -51,12 +52,10 @@ function hexToRgb(hex: string): [number, number, number] | null {
 }
 
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
-  const colors: Record<string, string> = { complete: "var(--off-white)", ingested: "#4ade80", partial: "#f59e0b", missing: "transparent" };
-  const bg = colors[status] ?? "transparent";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-      <span style={{ fontSize: "10px", color: "var(--light-gray)", fontFamily: "inherit" }}>{year}</span>
-      <div style={{ width: "20px", height: "20px", background: status === "missing" ? "transparent" : bg, border: "1px solid var(--light-gray)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "var(--light-gray)" }}>
+    <div className="sdm-year-block">
+      <span className="sdm-year-label">{year}</span>
+      <div className={`sdm-year-cell ${status}`}>
         {status === "missing" ? "✕" : ""}
       </div>
     </div>
@@ -65,26 +64,41 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
 
 function SpeciesCard({ sp, isSelected, onClick }: any) {
   return (
-    <button onClick={onClick} style={{ background: isSelected ? "rgba(242,242,242,0.08)" : "rgba(26,26,26,0.85)", border: isSelected ? "1px solid var(--off-white)" : "1px solid var(--dark-gray)", padding: "10px 12px", textAlign: "left", cursor: "pointer", transition: "all 0.15s ease", display: "flex", flexDirection: "column", gap: "3px", minHeight: "56px" }} onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--light-gray)"; }} onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--dark-gray)"; }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        <div style={{ width: "8px", height: "8px", flexShrink: 0, background: `rgb(${sp.color.join(",")})` }} />
-        <span style={{ fontSize: "11px", fontWeight: isSelected ? 700 : 400, color: "var(--off-white)", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sp.commonName}</span>
+    <button
+      onClick={onClick}
+      className={`sdm-card${isSelected ? " selected" : ""}`}
+    >
+      <div className="sdm-card-header">
+        <div
+          className="sdm-card-dot"
+          style={{ background: `rgb(${sp.color.join(",")})` }}
+        />
+        <span className="sdm-card-name">{sp.commonName}</span>
       </div>
-      <span style={{ fontSize: "10px", color: "var(--light-gray)", fontStyle: "italic", paddingLeft: "14px" }}>{sp.scientificName}</span>
-      {sp.actualObs && <span style={{ fontSize: "9px", color: "var(--light-gray)", paddingLeft: "14px" }}>{sp.actualObs.toLocaleString()} obs</span>}
+      <span className="sdm-card-scientific">{sp.scientificName}</span>
+      {sp.actualObs && (
+        <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
+      )}
     </button>
   );
 }
 
 function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   return (
-    <div style={{ marginBottom: "20px" }}>
-      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--light-gray)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "10px", paddingBottom: "6px", borderBottom: "1px solid var(--dark-gray)" }}>{title}</div>
+    <div className="sdm-section">
+      <div className="sdm-section-title">{title}</div>
       {items.length === 0 ? (
-        <div style={{ fontSize: "11px", color: "var(--light-gray)", fontStyle: "italic" }}>No species loaded</div>
+        <div className="sdm-section-empty">No species loaded</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
-          {items.map((sp: any) => <SpeciesCard key={sp.fileName} sp={sp} isSelected={sp.fileName === selectedFileName} onClick={() => onSelect(sp)} />)}
+        <div className="sdm-card-grid">
+          {items.map((sp: any) => (
+            <SpeciesCard
+              key={sp.fileName}
+              sp={sp}
+              isSelected={sp.fileName === selectedFileName}
+              onClick={() => onSelect(sp)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -106,7 +120,7 @@ export default function SDMPage() {
   const [selectedStep, setSelectedStep] = useState(STEP_OPTIONS[2]);
   const [showTerrain, setShowTerrain] = useState(false);
   const [terrainOpacity, setTerrainOpacity] = useState(0.25);
-  const [globalTimeRange, setGlobalTimeRange] = useState<[number, number]>([0, 1]);
+  const [viewState, setViewState] = useState<any>(INITIAL_VIEW);
 
   useEffect(() => {
     setMounted(true);
@@ -167,11 +181,34 @@ export default function SDMPage() {
         const ts = points.map((p: any) => p.timestamp).filter((t: any) => !isNaN(t) && t > 0);
         if (ts.length === 0) throw new Error("No valid timestamps");
 
-        const min = Math.min(...ts);
-        const max = Math.max(...ts);
+        const min = ts.reduce((a: number, b: number) => a < b ? a : b);
+        const max = ts.reduce((a: number, b: number) => a > b ? a : b);
+
+        // Compute bbox and fly map to fit the species range
+        const lngs = points.map((p: any) => p.position[0]);
+        const lats = points.map((p: any) => p.position[1]);
+        const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
+        const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
+        const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
+        const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
+        try {
+          const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
+          const { longitude, latitude, zoom } = vp.fitBounds(
+            [[minLng, minLat], [maxLng, maxLat]],
+            { padding: 60 }
+          );
+          setViewState({
+            longitude,
+            latitude,
+            zoom: Math.min(zoom, 8),
+            transitionDuration: 1200,
+            transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
+          });
+        } catch {
+          // fitBounds can fail on degenerate extents (single point etc.), leave view as-is
+        }
         setData(points);
         setTimeRange([min, max]);
-        setGlobalTimeRange([min, max]);
         setCurrentTime(min);
         setLoading(false);
       } catch (err) {
@@ -182,49 +219,73 @@ export default function SDMPage() {
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
+  // ── Playback: advance time, stop at end instead of looping backward ──
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
         const next = t + selectedStep.days * 24 * 60 * 60 * 1000;
-        return next > timeRange[1] ? timeRange[0] : next;
+        if (next >= timeRange[1]) {
+          setIsPlaying(false);
+          return timeRange[1];
+        }
+        return next;
       });
     }, 100);
     return () => clearInterval(interval);
   }, [isPlaying, timeRange, loading, selectedStep]);
 
-  const handleSelectSpecies = useCallback((sp: Species) => { setSelectedSpecies(sp); setIsPlaying(false); }, []);
+  const handleSelectSpecies = useCallback((sp: Species) => {
+    setSelectedSpecies(sp);
+    setIsPlaying(false);
+  }, []);
 
   if (!mounted || !canvasReady) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", background: "var(--background)" }}>
-        <span style={{ color: "var(--light-gray)", fontSize: "13px" }}>Initializing canvas…</span>
+      <div className="sdm-loading">
+        <span className="sdm-loading-text">Initializing canvas…</span>
       </div>
     );
   }
 
-  const timeWindowMs = selectedStep.days === -1 ? timeRange[1] - timeRange[0] : selectedStep.days * 24 * 60 * 60 * 1000;
+  const timeWindowMs =
+    selectedStep.days === -1
+      ? timeRange[1] - timeRange[0]
+      : selectedStep.days * 24 * 60 * 60 * 1000;
+
   const layers = [
-    ...(showTerrain ? [
-      new TileLayer({
-        id: "terrain",
-        data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-        minZoom: 0, maxZoom: 15, tileSize: 256,
-        renderSubLayers: (props: any) => {
-          const { bbox } = props.tile;
-          const bounds: [number,number,number,number] = [bbox.west ?? bbox.left, bbox.south ?? bbox.bottom, bbox.east ?? bbox.right, bbox.north ?? bbox.top];
-          return new BitmapLayer(props, { image: props.data, bounds, opacity: terrainOpacity });
-        },
-      }),
-    ] : []),
+    ...(showTerrain
+      ? [
+          new TileLayer({
+            id: "terrain",
+            data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+            minZoom: 0,
+            maxZoom: 15,
+            tileSize: 256,
+            renderSubLayers: (props: any) => {
+              const { bbox } = props.tile;
+              const bounds: [number, number, number, number] = [
+                bbox.west ?? bbox.left,
+                bbox.south ?? bbox.bottom,
+                bbox.east ?? bbox.right,
+                bbox.north ?? bbox.top,
+              ];
+              return new BitmapLayer(props, { image: props.data, bounds, opacity: terrainOpacity });
+            },
+          }),
+        ]
+      : []),
     new ScatterplotLayer({
       id: "occurrences",
       data,
       getPosition: (d: any) => d.position,
       getFilterValue: (d: any) => d.timestamp,
-      filterRange: selectedStep.days === -1 ? [timeRange[0], currentTime] : [currentTime - timeWindowMs, currentTime],
+      filterRange:
+        selectedStep.days === -1
+          ? [timeRange[0], currentTime]
+          : [currentTime - timeWindowMs, currentTime],
       extensions: [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor: selectedSpecies?.color ?? [255,255,255],
+      getFillColor: selectedSpecies?.color ?? [255, 255, 255],
       getRadius: 3000,
       radiusMinPixels: 1.5,
       radiusMaxPixels: 4,
@@ -233,104 +294,197 @@ export default function SDMPage() {
     }),
   ];
 
-  const currentDate = new Date(currentTime).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
-  const progressPct = timeRange[1] > timeRange[0] ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100 : 0;
+  const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+  });
+  const progressPct =
+    timeRange[1] > timeRange[0]
+      ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
+      : 0;
 
   const yearStatuses: Record<number, "complete" | "ingested" | "missing" | "partial"> = {};
-  YEARS.forEach((y) => { yearStatuses[y] = data.some((d: any) => new Date(d.timestamp).getFullYear() === y) ? "ingested" : "missing"; });
+  YEARS.forEach((y) => {
+    yearStatuses[y] = data.some((d: any) => new Date(d.timestamp).getFullYear() === y)
+      ? "ingested"
+      : "missing";
+  });
 
   const butterflies = species.filter((s) => !s.category || s.category === "lepidoptera");
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");
   const hostPlants = species.filter((s) => s.category === "host_plant");
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "calc(100vh - 64px)", overflow: "hidden" }}>
-      <div style={{ position: "absolute", inset: 0 }}>
-        <DeckGL controller={true} initialViewState={INITIAL_VIEW} layers={layers} style={{ width: "100%", height: "100%" }} useDevicePixels={1}>
+    <div className="sdm-root">
+      {/* Map layer */}
+      <div className="sdm-map-wrapper">
+        <DeckGL
+          controller={true}
+          viewState={viewState}
+          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
+          layers={layers}
+          style={{ width: "100%", height: "100%" }}
+          useDevicePixels={1}
+        >
           <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
         </DeckGL>
       </div>
-      <div style={{ position: "absolute", top: "20px", left: "20px", width: "340px", maxHeight: "calc(100vh - 40px)", overflowY: "auto", overflowX: "hidden", display: "flex", flexDirection: "column", gap: "0", zIndex: 10, scrollbarWidth: "thin", scrollbarColor: "var(--dark-gray) transparent" }}>
-        <div style={{ width: "100%", height: "200px", background: "var(--dark-gray)", border: "1px solid var(--dark-gray)", borderBottom: "none", overflow: "hidden", position: "relative" }}>
-          <a href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`} target="_blank" rel="noreferrer" style={{ position: "absolute", bottom: "8px", right: "8px", width: "28px", height: "28px", border: "1px solid var(--off-white)", background: "rgba(13,13,13,0.85)", color: "var(--off-white)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, textDecoration: "none", zIndex: 2, transition: "all 0.15s ease" }} onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "var(--off-white)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--background)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(13,13,13,0.85)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--off-white)"; }}>W</a>
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "11px", color: "var(--light-gray)", fontStyle: "italic" }}>photo unavailable</span>
-          </div>
+
+      {/* Left panel */}
+      <div className="sdm-left">
+        {/* Photo block */}
+        <div className="sdm-block sdm-photo">
+          <a
+            href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`}
+            target="_blank"
+            rel="noreferrer"
+            className="sdm-wiki-btn"
+          >
+            W
+          </a>
+          <span className="sdm-photo-unavailable">photo unavailable</span>
         </div>
-        <div style={{ background: "rgba(13,13,13,0.92)", border: "1px solid var(--dark-gray)", borderTop: "none", padding: "14px 16px" }}>
+
+        {/* Info block */}
+        <div className="sdm-block sdm-info">
           {selectedSpecies ? (
             <>
-              <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--off-white)", lineHeight: 1.2 }}>{selectedSpecies.commonName}</div>
-              <div style={{ fontSize: "12px", fontStyle: "italic", color: "var(--light-gray)", marginTop: "3px" }}>{selectedSpecies.scientificName}</div>
-              <div style={{ fontSize: "11px", color: "var(--light-gray)", marginTop: "10px", lineHeight: 1.6 }}>Species description will be loaded from the database.</div>
+              <p className="sdm-common-name">{selectedSpecies.commonName}</p>
+              <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
+              <p className="sdm-description">Species description will be loaded from the database.</p>
             </>
           ) : (
-            <div style={{ fontSize: "12px", color: "var(--light-gray)" }}>Loading…</div>
+            <p className="sdm-description">Loading…</p>
           )}
         </div>
-        <div style={{ background: "rgba(13,13,13,0.92)", border: "1px solid var(--dark-gray)", borderTop: "none", padding: "12px 14px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: "32px", height: "32px", border: "1px solid var(--light-gray)", background: "transparent", color: "var(--off-white)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", flexShrink: 0, transition: "all 0.15s" }} onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--off-white)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--background)"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--off-white)"; }}>
+
+        {/* Playback block */}
+        <div className="sdm-block sdm-playback">
+          <div className="sdm-playback-row">
+            {/* Play/pause */}
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="sdm-play-btn"
+            >
               {isPlaying ? "||" : "▶"}
             </button>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "9px", color: "var(--light-gray)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Total Records</span>
-                <span style={{ fontSize: "9px", color: "var(--light-gray)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Date</span>
+
+            {/* Stats */}
+            <div className="sdm-stats">
+              <div className="sdm-stats-labels">
+                <span className="sdm-stats-label">Total Records</span>
+                <span className="sdm-stats-label">Date</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "11px", color: "var(--off-white)", fontWeight: 600 }}>{loading ? "…" : data.length.toLocaleString()}</span>
-                <span style={{ fontSize: "11px", color: "var(--off-white)" }}>{currentDate}</span>
+              <div className="sdm-stats-values">
+                <span className="sdm-stats-value">{loading ? "…" : data.length.toLocaleString()}</span>
+                <span className="sdm-stats-date">{currentDate}</span>
               </div>
             </div>
-            <div style={{ position: "relative", flexShrink: 0 }}>
-              <button onClick={() => setShowStepMenu(!showStepMenu)} style={{ display: "flex", alignItems: "center", gap: "4px", border: "1px solid var(--light-gray)", background: "transparent", color: "var(--off-white)", padding: "4px 8px", fontSize: "10px", cursor: "pointer", whiteSpace: "nowrap" }}>
+
+            {/* Step selector */}
+            <div className="sdm-step-wrapper">
+              <button
+                onClick={() => setShowStepMenu(!showStepMenu)}
+                className="sdm-step-btn"
+              >
                 Step<br />{selectedStep.label} ▼
               </button>
               {showStepMenu && (
-                <div style={{ position: "absolute", bottom: "calc(100% + 4px)", right: 0, background: "var(--near-black)", border: "1px solid var(--dark-gray)", zIndex: 20, minWidth: "120px" }}>
+                <div className="sdm-dropdown">
                   {STEP_OPTIONS.map((opt) => (
-                    <button key={opt.label} onClick={() => { setSelectedStep(opt); setShowStepMenu(false); }} style={{ display: "block", width: "100%", padding: "8px 12px", textAlign: "left", fontSize: "11px", background: "transparent", color: opt.label === selectedStep.label ? "var(--off-white)" : "var(--light-gray)", fontWeight: opt.label === selectedStep.label ? 700 : 400, cursor: "pointer", border: "none", borderBottom: "1px solid var(--dark-gray)" }}>
+                    <button
+                      key={opt.label}
+                      onClick={() => { setSelectedStep(opt); setShowStepMenu(false); }}
+                      className={`sdm-dropdown-item${opt.label === selectedStep.label ? " active" : ""}`}
+                    >
                       {opt.label}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <div style={{ width: "20px", height: "20px", border: "1px solid var(--light-gray)", flexShrink: 0, background: selectedSpecies ? `rgb(${selectedSpecies.color.join(",")})` : "var(--dark-gray)" }} />
+
+            {/* Color swatch */}
+            <div
+              className="sdm-color-swatch"
+              style={{ background: selectedSpecies ? `rgb(${selectedSpecies.color.join(",")})` : "var(--dark-gray)" }}
+            />
           </div>
-          <div style={{ width: "100%", height: "3px", background: "var(--dark-gray)", marginBottom: "10px", cursor: "pointer" }} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); const pct = (e.clientX - rect.left) / rect.width; setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0])); setIsPlaying(false); }}>
-            <div style={{ width: `${progressPct}%`, height: "100%", background: "var(--off-white)", transition: "width 0.1s linear" }} />
+
+          {/* Progress bar */}
+          <div
+            className="sdm-progress-track"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const pct = (e.clientX - rect.left) / rect.width;
+              setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
+              setIsPlaying(false);
+            }}
+          >
+            <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
-          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-            {YEARS.map((y) => <YearBlock key={y} year={y} status={yearStatuses[y]} />)}
+
+          {/* Year blocks */}
+          <div className="sdm-years">
+            {YEARS.map((y) => (
+              <YearBlock key={y} year={y} status={yearStatuses[y]} />
+            ))}
           </div>
         </div>
-        <div style={{ background: "rgba(13,13,13,0.92)", border: "1px solid var(--dark-gray)", borderTop: "none", padding: "16px" }}>
-          <SelectorSection title="Butterflies" items={butterflies} selectedFileName={selectedSpecies?.fileName ?? ""} onSelect={handleSelectSpecies} />
-          <SelectorSection title="Nectar Plants" items={nectarPlants} selectedFileName={selectedSpecies?.fileName ?? ""} onSelect={handleSelectSpecies} />
-          <SelectorSection title="Larval Host Plants" items={hostPlants} selectedFileName={selectedSpecies?.fileName ?? ""} onSelect={handleSelectSpecies} />
+
+        {/* Species selector */}
+        <div className="sdm-block sdm-selector">
+          <SelectorSection
+            title="Butterflies"
+            items={butterflies}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+          <SelectorSection
+            title="Nectar Plants"
+            items={nectarPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+          <SelectorSection
+            title="Larval Host Plants"
+            items={hostPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
         </div>
       </div>
-      <div style={{ position: "absolute", top: "20px", right: "20px", background: "rgba(13,13,13,0.92)", border: "1px solid var(--dark-gray)", padding: "12px 14px", zIndex: 10, display: "flex", flexDirection: "column", gap: "10px", minWidth: "160px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-          <span style={{ fontSize: "11px", color: "var(--light-gray)" }}>Terrain</span>
-          <button onClick={() => setShowTerrain(!showTerrain)} style={{ padding: "3px 10px", border: "1px solid var(--light-gray)", background: showTerrain ? "var(--off-white)" : "transparent", color: showTerrain ? "var(--background)" : "var(--off-white)", fontSize: "10px", cursor: "pointer", fontFamily: "inherit", letterSpacing: "0.08em" }}>
+
+      {/* Terrain controls */}
+      <div className="sdm-block sdm-controls">
+        <div className="sdm-control-row">
+          <span className="sdm-control-label">Terrain</span>
+          <button
+            onClick={() => setShowTerrain(!showTerrain)}
+            className={`sdm-toggle-btn${showTerrain ? " on" : ""}`}
+          >
             {showTerrain ? "ON" : "OFF"}
           </button>
         </div>
         {showTerrain && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "10px", color: "var(--light-gray)" }}>Opacity</span>
-            <input type="range" min="0" max="100" value={Math.round(terrainOpacity * 100)} onChange={(e) => setTerrainOpacity(parseInt(e.target.value) / 100)} style={{ flex: 1, height: "2px", accentColor: "var(--off-white)" }} />
-            <span style={{ fontSize: "10px", color: "var(--light-gray)", minWidth: "28px", textAlign: "right" }}>{Math.round(terrainOpacity * 100)}%</span>
+          <div className="sdm-opacity-row">
+            <span className="sdm-control-label">Opacity</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(terrainOpacity * 100)}
+              onChange={(e) => setTerrainOpacity(parseInt(e.target.value) / 100)}
+            />
+            <span className="sdm-opacity-value">{Math.round(terrainOpacity * 100)}%</span>
           </div>
         )}
       </div>
+
+      {/* Error toast */}
       {error && (
-        <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", background: "rgba(13,13,13,0.95)", border: "1px solid var(--light-gray)", padding: "10px 18px", zIndex: 20, fontSize: "11px", color: "var(--light-gray)" }}>
-          {error}
-        </div>
+        <div className="sdm-error">{error}</div>
       )}
     </div>
   );
