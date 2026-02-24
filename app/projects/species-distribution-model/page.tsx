@@ -19,15 +19,21 @@ const COLOR_PALETTE: [number, number, number][] = [
 ];
 
 const STEP_OPTIONS = [
-  { label: "1 Day", days: 1 },
-  { label: "1 Week", days: 7 },
+  { label: "1 Day",     days: 1  },
+  { label: "1 Week",    days: 7  },
   { label: "2 Week(s)", days: 14 },
-  { label: "1 Month", days: 30 },
-  { label: "3 Months", days: 90 },
-  { label: "All Time", days: -1 },
+  { label: "1 Month",   days: 30 },
+  { label: "3 Months",  days: 90 },
+  { label: "All Time",  days: -1 },
 ];
 
+// When "All Time" is active, advance playback by this many days per tick
+// (days=-1 would go backward, so we use a real positive step instead)
+const ALL_TIME_STEP_DAYS = 30;
+
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+
+type MapLayer = "occurrence" | "sdm";
 
 type Species = {
   scientificName: string;
@@ -51,6 +57,7 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
+// ── Year block ───────────────────────────────────────────────────────────────
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
   return (
     <div className="sdm-year-block">
@@ -62,27 +69,50 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
   );
 }
 
+// Maps scientific name → SVG filename in /public/species/
+// Add entries here as you create more pixel art
+const SPECIES_IMAGES: Record<string, string> = {
+  "danaus plexippus":   "/species/danaus-plexippus.svg",
+  "vanessa cardui":     "/species/vanessa-cardui.svg",
+  "vanessa atalanta":   "/species/vanessa-atalanta.svg",
+  "junonia coenia":     "/species/junonia-coenia.svg",
+  "papilio polyxenes":  "/species/papilio-polyxenes.svg",
+};
+
+function getSpeciesImage(scientificName: string): string {
+  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `/species/${slug}.svg`;
+}
+
+// ── Species card ─────────────────────────────────────────────────────────────
 function SpeciesCard({ sp, isSelected, onClick }: any) {
+  const imgSrc = getSpeciesImage(sp.scientificName);
   return (
-    <button
-      onClick={onClick}
-      className={`sdm-card${isSelected ? " selected" : ""}`}
-    >
-      <div className="sdm-card-header">
-        <div
-          className="sdm-card-dot"
-          style={{ background: `rgb(${sp.color.join(",")})` }}
-        />
-        <span className="sdm-card-name">{sp.commonName}</span>
+    <button onClick={onClick} className={`sdm-card${isSelected ? " selected" : ""}`}>
+      {/* Image / placeholder square */}
+      <div className="sdm-card-image">
+  <img
+    src={getSpeciesImage(sp.scientificName)}
+    alt={sp.commonName}
+    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+  />
+</div>
+      {/* Text body */}
+      <div className="sdm-card-body">
+        <div className="sdm-card-header">
+          <div className="sdm-card-dot" style={{ background: `rgb(${sp.color.join(",")})` }} />
+          <span className="sdm-card-name">{sp.commonName}</span>
+        </div>
+        <span className="sdm-card-scientific">{sp.scientificName}</span>
+        {sp.actualObs && (
+          <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
+        )}
       </div>
-      <span className="sdm-card-scientific">{sp.scientificName}</span>
-      {sp.actualObs && (
-        <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
-      )}
     </button>
   );
 }
 
+// ── Selector section ─────────────────────────────────────────────────────────
 function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   return (
     <div className="sdm-section">
@@ -105,38 +135,92 @@ function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   );
 }
 
+// ── Layer switch ─────────────────────────────────────────────────────────────
+function LayerSwitch({ active, onChange }: { active: MapLayer; onChange: (l: MapLayer) => void }) {
+  return (
+    <div className="sdm-layer-switch">
+      <button
+        onClick={() => onChange("occurrence")}
+        className={`sdm-layer-btn${active === "occurrence" ? " active-occ" : ""}`}
+      >
+        <svg width="26" height="22" viewBox="0 0 26 22">
+          {([[4,17],[8,7],[14,12],[20,5],[11,18],[6,10],[19,14],[16,7],[9,16]] as [number,number][]).map(([x,y],i) => (
+            <circle key={i} cx={x} cy={y} r={1.8}
+              fill={active === "occurrence" ? "var(--occurrence)" : "var(--layer-icon-inactive)"} />
+          ))}
+        </svg>
+        <span className={`sdm-layer-label${active === "occurrence" ? " active-occ" : ""}`}>
+          Occurrence
+        </span>
+      </button>
+
+      <button
+        onClick={() => onChange("sdm")}
+        className={`sdm-layer-btn${active === "sdm" ? " active-sdm" : ""}`}
+      >
+        <svg width="26" height="22" viewBox="0 0 26 22">
+          {([0,1,2,3] as number[]).map(row =>
+            ([0,1,2,3] as number[]).map(col => {
+              const vals = [
+                [0.1, 0.35, 0.45, 0.15],
+                [0.3, 0.9,  1.0,  0.5 ],
+                [0.2, 0.6,  0.7,  0.3 ],
+                [0.05,0.2,  0.25, 0.1 ],
+              ];
+              const v = vals[row][col];
+              return (
+                <rect key={`${row}-${col}`}
+                  x={col * 6 + 1} y={row * 5 + 1} width={5} height={4}
+                  fill={active === "sdm"
+                    ? `rgba(245,158,11,${v})`
+                    : `rgba(80,80,80,${v * 0.7})`}
+                />
+              );
+            })
+          )}
+        </svg>
+        <span className={`sdm-layer-label${active === "sdm" ? " active-sdm" : ""}`}>
+          SDM
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
-  const [mounted, setMounted] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
-  const [data, setData] = useState<any[]>([]);
-  const [timeRange, setTimeRange] = useState<[number, number]>([0, 1]);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [species, setSpecies] = useState<Species[]>([]);
-  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showStepMenu, setShowStepMenu] = useState(false);
-  const [selectedStep, setSelectedStep] = useState(STEP_OPTIONS[2]);
-  const [showTerrain, setShowTerrain] = useState(false);
-  const [terrainOpacity, setTerrainOpacity] = useState(0.25);
-  const [viewState, setViewState] = useState<any>(INITIAL_VIEW);
+  const [mounted, setMounted]                   = useState(false);
+  const [canvasReady, setCanvasReady]           = useState(false);
+  const [data, setData]                         = useState<any[]>([]);
+  const [timeRange, setTimeRange]               = useState<[number, number]>([0, 1]);
+  const [currentTime, setCurrentTime]           = useState(0);
+  const [isPlaying, setIsPlaying]               = useState(false);
+  const [species, setSpecies]                   = useState<Species[]>([]);
+  const [selectedSpecies, setSelectedSpecies]   = useState<Species | null>(null);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState<string | null>(null);
+  const [showStepMenu, setShowStepMenu]         = useState(false);
+  const [selectedStep, setSelectedStep]         = useState(STEP_OPTIONS[2]);
+  const [mapLayer, setMapLayer]                 = useState<MapLayer>("occurrence");
+  const [sdmOpacity, setSdmOpacity]             = useState(0.65);
+  const [viewState, setViewState]               = useState<any>(INITIAL_VIEW);
 
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 500);
   }, []);
 
+  // Load species list
   useEffect(() => {
     if (!mounted || !canvasReady) return;
     const load = async () => {
       try {
         const res = await fetch("/api/species");
         if (!res.ok) throw new Error(`API failed (${res.status})`);
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) throw new Error("No data");
+        const json = await res.json();
+        if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
 
-        const parsed: Species[] = data.map((item: any, index: number) => {
+        const parsed: Species[] = json.map((item: any, index: number) => {
           const colorRGB = hexToRgb(item.color ?? "") ?? COLOR_PALETTE[index % COLOR_PALETTE.length];
           const actualObs = item.actual_obs ? Math.round(parseFloat(item.actual_obs)) : undefined;
           return {
@@ -161,6 +245,7 @@ export default function SDMPage() {
     load();
   }, [mounted, canvasReady]);
 
+  // Load occurrences for selected species
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
     const load = async () => {
@@ -174,7 +259,10 @@ export default function SDMPage() {
 
         const points = geojson.features.map((f: any) => {
           try {
-            return { position: f.geometry.coordinates, timestamp: new Date(f.properties.eventDate).getTime() };
+            return {
+              position: f.geometry.coordinates,
+              timestamp: new Date(f.properties.eventDate).getTime(),
+            };
           } catch { return null; }
         }).filter(Boolean);
 
@@ -184,7 +272,7 @@ export default function SDMPage() {
         const min = ts.reduce((a: number, b: number) => a < b ? a : b);
         const max = ts.reduce((a: number, b: number) => a > b ? a : b);
 
-        // Compute bbox and fly map to fit the species range
+        // Auto-fit map to species extent
         const lngs = points.map((p: any) => p.position[0]);
         const lats = points.map((p: any) => p.position[1]);
         const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
@@ -198,15 +286,15 @@ export default function SDMPage() {
             { padding: 60 }
           );
           setViewState({
-            longitude,
-            latitude,
+            longitude, latitude,
             zoom: Math.min(zoom, 8),
             transitionDuration: 1200,
             transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
           });
         } catch {
-          // fitBounds can fail on degenerate extents (single point etc.), leave view as-is
+          // degenerate extent (single point etc.) — leave view unchanged
         }
+
         setData(points);
         setTimeRange([min, max]);
         setCurrentTime(min);
@@ -219,12 +307,16 @@ export default function SDMPage() {
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  // ── Playback: advance time, stop at end instead of looping backward ──
+  // ── Playback ────────────────────────────────────────────────────────────────
+  // Bug fix: when selectedStep.days === -1 ("All Time"), using days directly
+  // as the increment would subtract 1 day per tick (goes backward).
+  // Instead we use ALL_TIME_STEP_DAYS as the playback step.
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
+    const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
-        const next = t + selectedStep.days * 24 * 60 * 60 * 1000;
+        const next = t + stepDays * 24 * 60 * 60 * 1000;
         if (next >= timeRange[1]) {
           setIsPlaying(false);
           return timeRange[1];
@@ -238,6 +330,11 @@ export default function SDMPage() {
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
     setIsPlaying(false);
+  }, []);
+
+  const handleLayerChange = useCallback((l: MapLayer) => {
+    setMapLayer(l);
+    if (l === "sdm") setIsPlaying(false);
   }, []);
 
   if (!mounted || !canvasReady) {
@@ -254,44 +351,45 @@ export default function SDMPage() {
       : selectedStep.days * 24 * 60 * 60 * 1000;
 
   const layers = [
-    ...(showTerrain
-      ? [
-          new TileLayer({
-            id: "terrain",
-            data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-            minZoom: 0,
-            maxZoom: 15,
-            tileSize: 256,
-            renderSubLayers: (props: any) => {
-              const { bbox } = props.tile;
-              const bounds: [number, number, number, number] = [
-                bbox.west ?? bbox.left,
-                bbox.south ?? bbox.bottom,
-                bbox.east ?? bbox.right,
-                bbox.north ?? bbox.top,
-              ];
-              return new BitmapLayer(props, { image: props.data, bounds, opacity: terrainOpacity });
-            },
-          }),
-        ]
-      : []),
-    new ScatterplotLayer({
-      id: "occurrences",
-      data,
-      getPosition: (d: any) => d.position,
-      getFilterValue: (d: any) => d.timestamp,
-      filterRange:
-        selectedStep.days === -1
-          ? [timeRange[0], currentTime]
-          : [currentTime - timeWindowMs, currentTime],
-      extensions: [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor: selectedSpecies?.color ?? [255, 255, 255],
-      getRadius: 3000,
-      radiusMinPixels: 1.5,
-      radiusMaxPixels: 4,
-      opacity: 0.75,
-      pickable: false,
-    }),
+    ...(mapLayer === "occurrence" ? [
+      new ScatterplotLayer({
+        id: "occurrences",
+        data,
+        getPosition: (d: any) => d.position,
+        getFilterValue: (d: any) => d.timestamp,
+        filterRange:
+          selectedStep.days === -1
+            ? [timeRange[0], currentTime]
+            : [currentTime - timeWindowMs, currentTime],
+        extensions: [new DataFilterExtension({ filterSize: 1 })],
+        getFillColor: selectedSpecies?.color ?? [255, 255, 255],
+        getRadius: 3000,
+        radiusMinPixels: 1.5,
+        radiusMaxPixels: 4,
+        opacity: 0.75,
+        pickable: false,
+      }),
+    ] : []),
+
+    ...(mapLayer === "sdm" ? [
+      new TileLayer({
+        id: "sdm-raster",
+        data: "https://placeholder-sdm-tiles/{z}/{x}/{y}.png",
+        minZoom: 0,
+        maxZoom: 12,
+        tileSize: 256,
+        renderSubLayers: (props: any) => {
+          const { bbox } = props.tile;
+          const bounds: [number, number, number, number] = [
+            bbox.west ?? bbox.left,
+            bbox.south ?? bbox.bottom,
+            bbox.east ?? bbox.right,
+            bbox.north ?? bbox.top,
+          ];
+          return new BitmapLayer(props, { image: props.data, bounds, opacity: sdmOpacity });
+        },
+      }),
+    ] : []),
   ];
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
@@ -299,6 +397,7 @@ export default function SDMPage() {
     day: "numeric",
     year: "numeric",
   });
+
   const progressPct =
     timeRange[1] > timeRange[0]
       ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
@@ -311,13 +410,15 @@ export default function SDMPage() {
       : "missing";
   });
 
-  const butterflies = species.filter((s) => !s.category || s.category === "lepidoptera");
+  const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");
-  const hostPlants = species.filter((s) => s.category === "host_plant");
+  const hostPlants   = species.filter((s) => s.category === "host_plant");
+  const isSdm        = mapLayer === "sdm";
 
   return (
     <div className="sdm-root">
-      {/* Map layer */}
+
+      {/* Map */}
       <div className="sdm-map-wrapper">
         <DeckGL
           controller={true}
@@ -333,7 +434,8 @@ export default function SDMPage() {
 
       {/* Left panel */}
       <div className="sdm-left">
-        {/* Photo block */}
+
+        {/* Photo */}
         <div className="sdm-block sdm-photo">
           <a
             href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`}
@@ -346,7 +448,7 @@ export default function SDMPage() {
           <span className="sdm-photo-unavailable">photo unavailable</span>
         </div>
 
-        {/* Info block */}
+        {/* Info */}
         <div className="sdm-block sdm-info">
           {selectedSpecies ? (
             <>
@@ -359,10 +461,13 @@ export default function SDMPage() {
           )}
         </div>
 
-        {/* Playback block */}
-        <div className="sdm-block sdm-playback">
+        {/* Playback — fades out in SDM mode */}
+        <div className={`sdm-block sdm-playback${isSdm ? " sdm-hidden" : ""}`}>
+
+          {/* Row 1: play · stats · interval */}
           <div className="sdm-playback-row">
-            {/* Play/pause */}
+
+            {/* Large play/pause */}
             <button
               onClick={() => setIsPlaying(!isPlaying)}
               className="sdm-play-btn"
@@ -370,25 +475,29 @@ export default function SDMPage() {
               {isPlaying ? "||" : "▶"}
             </button>
 
-            {/* Stats */}
-            <div className="sdm-stats">
-              <div className="sdm-stats-labels">
-                <span className="sdm-stats-label">Total Records</span>
-                <span className="sdm-stats-label">Date</span>
-              </div>
-              <div className="sdm-stats-values">
-                <span className="sdm-stats-value">{loading ? "…" : data.length.toLocaleString()}</span>
-                <span className="sdm-stats-date">{currentDate}</span>
-              </div>
+            {/* Total Records */}
+            <div className="sdm-stat-col">
+              <span className="sdm-stat-label">Total Records</span>
+              <span className="sdm-stat-value">{loading ? "…" : data.length.toLocaleString()}</span>
             </div>
 
-            {/* Step selector */}
-            <div className="sdm-step-wrapper">
+            {/* Date */}
+            <div className="sdm-stat-col">
+              <span className="sdm-stat-label">Date</span>
+              <span className="sdm-stat-value">{currentDate}</span>
+            </div>
+
+            {/* Interval — label+value left, arrow button right */}
+            <div className="sdm-interval-wrapper">
+              <div className="sdm-stat-col">
+                <span className="sdm-stat-label">Interval</span>
+                <span className="sdm-stat-value">{selectedStep.label}</span>
+              </div>
               <button
                 onClick={() => setShowStepMenu(!showStepMenu)}
-                className="sdm-step-btn"
+                className="sdm-interval-arrow"
               >
-                Step<br />{selectedStep.label} ▼
+                ▼
               </button>
               {showStepMenu && (
                 <div className="sdm-dropdown">
@@ -404,12 +513,6 @@ export default function SDMPage() {
                 </div>
               )}
             </div>
-
-            {/* Color swatch */}
-            <div
-              className="sdm-color-swatch"
-              style={{ background: selectedSpecies ? `rgb(${selectedSpecies.color.join(",")})` : "var(--dark-gray)" }}
-            />
           </div>
 
           {/* Progress bar */}
@@ -425,13 +528,54 @@ export default function SDMPage() {
             <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
 
-          {/* Year blocks */}
+          {/* Year grid */}
           <div className="sdm-years">
             {YEARS.map((y) => (
               <YearBlock key={y} year={y} status={yearStatuses[y]} />
             ))}
           </div>
+
+          {/* Category row */}
+          <div className="sdm-category-row">
+            <div className="sdm-category-item">
+              <div className="sdm-category-swatch" />
+              <span className="sdm-category-label">Nectar Plants</span>
+              <span className="sdm-category-info" title="Nectar plant occurrence data">ℹ</span>
+            </div>
+            <div className="sdm-category-item">
+              <div className="sdm-category-swatch" />
+              <span className="sdm-category-label">Larval Host Plants</span>
+              <span className="sdm-category-info" title="Larval host plant occurrence data">ℹ</span>
+            </div>
+          </div>
         </div>
+
+        {/* SDM model info — visible only in SDM mode */}
+        {isSdm && (
+          <div className="sdm-block sdm-model-info">
+            <div className="sdm-model-info-title">Model Info</div>
+            {[
+              ["Algorithm",  "MaxEnt 3.4"],
+              ["Resolution", "~4.5 km"],
+              ["AUC",        "—"],
+              ["Variables",  "19 bioclim"],
+            ].map(([k, v]) => (
+              <div key={k} className="sdm-model-row">
+                <span className="sdm-model-key">{k}</span>
+                <span className="sdm-model-val">{v}</span>
+              </div>
+            ))}
+            <div className="sdm-colormap">
+              <div className="sdm-colormap-label">Probability</div>
+              <div className="sdm-colormap-bar" />
+              <div className="sdm-colormap-ticks">
+                {["0", "0.25", "0.5", "0.75", "1.0"].map(l => (
+                  <span key={l}>{l}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Species selector */}
         <div className="sdm-block sdm-selector">
@@ -456,36 +600,11 @@ export default function SDMPage() {
         </div>
       </div>
 
-      {/* Terrain controls */}
-      <div className="sdm-block sdm-controls">
-        <div className="sdm-control-row">
-          <span className="sdm-control-label">Terrain</span>
-          <button
-            onClick={() => setShowTerrain(!showTerrain)}
-            className={`sdm-toggle-btn${showTerrain ? " on" : ""}`}
-          >
-            {showTerrain ? "ON" : "OFF"}
-          </button>
-        </div>
-        {showTerrain && (
-          <div className="sdm-opacity-row">
-            <span className="sdm-control-label">Opacity</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round(terrainOpacity * 100)}
-              onChange={(e) => setTerrainOpacity(parseInt(e.target.value) / 100)}
-            />
-            <span className="sdm-opacity-value">{Math.round(terrainOpacity * 100)}%</span>
-          </div>
-        )}
-      </div>
+      {/* Layer switch — bottom right of map */}
+      <LayerSwitch active={mapLayer} onChange={handleLayerChange} />
 
       {/* Error toast */}
-      {error && (
-        <div className="sdm-error">{error}</div>
-      )}
+      {error && <div className="sdm-error">{error}</div>}
     </div>
   );
 }
