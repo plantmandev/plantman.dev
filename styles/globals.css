@@ -478,6 +478,12 @@ nav[data-slot="base"] > div {
   color: var(--background);
 }
 
+.sdm-play-btn:disabled {
+  border-color: #444;
+  color: #444;
+  cursor: default;
+}
+
 .sdm-stat-col {
   display: flex;
   flex-direction: column;
@@ -708,6 +714,31 @@ nav[data-slot="base"] > div {
   font-size: 11px;
   color: var(--light-gray);
   white-space: nowrap;
+}
+
+/* ── Map loading overlay ─────────────────────────────────────────────────── */
+.sdm-map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 13, 13, 0.55);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.sdm-map-loading-text {
+  font-size: 13px;
+  color: var(--light-gray);
+  letter-spacing: 0.2em;
+  text-transform: lowercase;
+  animation: sdm-blink 1s step-start infinite;
+}
+
+@keyframes sdm-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
 }
 
 /* ── Loading screen ──────────────────────────────────────────────────────── */

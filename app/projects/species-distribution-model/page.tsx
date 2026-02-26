@@ -337,6 +337,13 @@ export default function SDMPage() {
         >
           <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
         </DeckGL>
+
+        {/* Loading overlay */}
+        {loading && (
+          <div className="sdm-map-loading">
+            <span className="sdm-map-loading-text">loading</span>
+          </div>
+        )}
       </div>
 
       {/* Left panel */}
@@ -371,8 +378,8 @@ export default function SDMPage() {
         {/* Playback */}
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
-            <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn">
-              {isPlaying ? "||" : "▶"}
+            <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn" disabled={loading}>
+              {loading ? "…" : isPlaying ? "||" : "▶"}
             </button>
 
             <div className="sdm-stat-col">
