@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { ScatterplotLayer, BitmapLayer } from "@deck.gl/layers";
-import { TileLayer } from "@deck.gl/geo-layers";
+import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 
@@ -31,8 +30,6 @@ const ALL_TIME_STEP_DAYS = 30;
 
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
-type MapLayer = "occurrence" | "sdm";
-
 type Species = {
   scientificName: string;
   fileName: string;
@@ -55,8 +52,6 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
-// Auto-derives SVG path from scientific name slug.
-// Drop file in /public/species/ and it appears automatically.
 function getSpeciesImage(scientificName: string): string {
   const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
   return `/species/${slug}.svg`;
@@ -122,58 +117,6 @@ function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   );
 }
 
-// ── Layer switch ─────────────────────────────────────────────────────────────
-function LayerSwitch({ active, onChange }: { active: MapLayer; onChange: (l: MapLayer) => void }) {
-  return (
-    <div className="sdm-layer-switch">
-      <button
-        onClick={() => onChange("occurrence")}
-        className={`sdm-layer-btn${active === "occurrence" ? " active-occ" : ""}`}
-      >
-        <svg width="26" height="22" viewBox="0 0 26 22">
-          {([[4,17],[8,7],[14,12],[20,5],[11,18],[6,10],[19,14],[16,7],[9,16]] as [number,number][]).map(([x,y],i) => (
-            <circle key={i} cx={x} cy={y} r={1.8}
-              fill={active === "occurrence" ? "var(--occurrence)" : "var(--layer-icon-inactive)"} />
-          ))}
-        </svg>
-        <span className={`sdm-layer-label${active === "occurrence" ? " active-occ" : ""}`}>
-          Occurrence
-        </span>
-      </button>
-
-      <button
-        onClick={() => onChange("sdm")}
-        className={`sdm-layer-btn${active === "sdm" ? " active-sdm" : ""}`}
-      >
-        <svg width="26" height="22" viewBox="0 0 26 22">
-          {([0,1,2,3] as number[]).map(row =>
-            ([0,1,2,3] as number[]).map(col => {
-              const vals = [
-                [0.1, 0.35, 0.45, 0.15],
-                [0.3, 0.9,  1.0,  0.5 ],
-                [0.2, 0.6,  0.7,  0.3 ],
-                [0.05,0.2,  0.25, 0.1 ],
-              ];
-              const v = vals[row][col];
-              return (
-                <rect key={`${row}-${col}`}
-                  x={col * 6 + 1} y={row * 5 + 1} width={5} height={4}
-                  fill={active === "sdm"
-                    ? `rgba(245,158,11,${v})`
-                    : `rgba(80,80,80,${v * 0.7})`}
-                />
-              );
-            })
-          )}
-        </svg>
-        <span className={`sdm-layer-label${active === "sdm" ? " active-sdm" : ""}`}>
-          SDM
-        </span>
-      </button>
-    </div>
-  );
-}
-
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
   const [mounted, setMounted]                 = useState(false);
@@ -188,8 +131,6 @@ export default function SDMPage() {
   const [error, setError]                     = useState<string | null>(null);
   const [showStepMenu, setShowStepMenu]       = useState(false);
   const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2]);
-  const [mapLayer, setMapLayer]               = useState<MapLayer>("occurrence");
-  const [sdmOpacity, setSdmOpacity]           = useState(0.65);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
@@ -240,6 +181,7 @@ export default function SDMPage() {
       try {
         setLoading(true);
         setError(null);
+        setIsPlaying(false);
 
         console.log("🦋 Fetching occurrences for:", selectedSpecies.scientificName);
 
@@ -265,15 +207,14 @@ export default function SDMPage() {
         const min = ts.reduce((a: number, b: number) => a < b ? a : b);
         const max = ts.reduce((a: number, b: number) => a > b ? a : b);
 
-        // Auto-fit map to species extent
-        const lngs = points.map((p: any) => p.position[0]);
-        const lats = points.map((p: any) => p.position[1]);
-        const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
-        const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
-        const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
-        const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
-        // Only fly to extent if we haven't already fit this species
+        // Auto-fit only once per species
         if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
+          const lngs = points.map((p: any) => p.position[0]);
+          const lats = points.map((p: any) => p.position[1]);
+          const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
+          const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
+          const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
+          const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
           try {
             const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
             const { longitude, latitude, zoom } = vp.fitBounds(
@@ -306,17 +247,15 @@ export default function SDMPage() {
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  // Playback
+  // ── Playback — loops when it reaches the end ─────────────────────────────
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
     const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
         const next = t + stepDays * 24 * 60 * 60 * 1000;
-        if (next >= timeRange[1]) {
-          setIsPlaying(false);
-          return timeRange[1];
-        }
+        // Loop back to start instead of stopping
+        if (next >= timeRange[1]) return timeRange[0];
         return next;
       });
     }, 100);
@@ -326,11 +265,6 @@ export default function SDMPage() {
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
     setIsPlaying(false);
-  }, []);
-
-  const handleLayerChange = useCallback((l: MapLayer) => {
-    setMapLayer(l);
-    if (l === "sdm") setIsPlaying(false);
   }, []);
 
   if (!mounted || !canvasReady) {
@@ -347,45 +281,23 @@ export default function SDMPage() {
       : selectedStep.days * 24 * 60 * 60 * 1000;
 
   const layers = [
-    ...(mapLayer === "occurrence" ? [
-      new ScatterplotLayer({
-        id:             "occurrences",
-        data,
-        getPosition:    (d: any) => d.position,
-        getFilterValue: (d: any) => d.timestamp,
-        filterRange:
-          selectedStep.days === -1
-            ? [timeRange[0], currentTime]
-            : [currentTime - timeWindowMs, currentTime],
-        extensions:      [new DataFilterExtension({ filterSize: 1 })],
-        getFillColor:    selectedSpecies?.color ?? [255, 255, 255],
-        getRadius:       3000,
-        radiusMinPixels: 1.5,
-        radiusMaxPixels: 4,
-        opacity:         0.75,
-        pickable:        false,
-      }),
-    ] : []),
-
-    ...(mapLayer === "sdm" ? [
-      new TileLayer({
-        id:       "sdm-raster",
-        data:     "https://placeholder-sdm-tiles/{z}/{x}/{y}.png",
-        minZoom:  0,
-        maxZoom:  12,
-        tileSize: 256,
-        renderSubLayers: (props: any) => {
-          const { bbox } = props.tile;
-          const bounds: [number, number, number, number] = [
-            bbox.west  ?? bbox.left,
-            bbox.south ?? bbox.bottom,
-            bbox.east  ?? bbox.right,
-            bbox.north ?? bbox.top,
-          ];
-          return new BitmapLayer(props, { image: props.data, bounds, opacity: sdmOpacity });
-        },
-      }),
-    ] : []),
+    new ScatterplotLayer({
+      id:             "occurrences",
+      data,
+      getPosition:    (d: any) => d.position,
+      getFilterValue: (d: any) => d.timestamp,
+      filterRange:
+        selectedStep.days === -1
+          ? [timeRange[0], currentTime]
+          : [currentTime - timeWindowMs, currentTime],
+      extensions:      [new DataFilterExtension({ filterSize: 1 })],
+      getFillColor:    selectedSpecies?.color ?? [255, 255, 255],
+      getRadius:       3000,
+      radiusMinPixels: 1.5,
+      radiusMaxPixels: 4,
+      opacity:         0.75,
+      pickable:        false,
+    }),
   ];
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
@@ -409,7 +321,6 @@ export default function SDMPage() {
   const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");
   const hostPlants   = species.filter((s) => s.category === "host_plant");
-  const isSdm        = mapLayer === "sdm";
 
   return (
     <div className="sdm-root">
@@ -457,8 +368,8 @@ export default function SDMPage() {
           )}
         </div>
 
-        {/* Playback — hidden in SDM mode */}
-        <div className={`sdm-block sdm-playback${isSdm ? " sdm-hidden" : ""}`}>
+        {/* Playback */}
+        <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
             <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn">
               {isPlaying ? "||" : "▶"}
@@ -540,33 +451,6 @@ export default function SDMPage() {
           </div>
         </div>
 
-        {/* SDM model info */}
-        {isSdm && (
-          <div className="sdm-block sdm-model-info">
-            <div className="sdm-model-info-title">Model Info</div>
-            {[
-              ["Algorithm",  "MaxEnt 3.4"],
-              ["Resolution", "~4.5 km"],
-              ["AUC",        "—"],
-              ["Variables",  "19 bioclim"],
-            ].map(([k, v]) => (
-              <div key={k} className="sdm-model-row">
-                <span className="sdm-model-key">{k}</span>
-                <span className="sdm-model-val">{v}</span>
-              </div>
-            ))}
-            <div className="sdm-colormap">
-              <div className="sdm-colormap-label">Probability</div>
-              <div className="sdm-colormap-bar" />
-              <div className="sdm-colormap-ticks">
-                {["0", "0.25", "0.5", "0.75", "1.0"].map(l => (
-                  <span key={l}>{l}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Species selector */}
         <div className="sdm-block sdm-selector">
           <SelectorSection
@@ -589,9 +473,6 @@ export default function SDMPage() {
           />
         </div>
       </div>
-
-      {/* Layer switch */}
-      <LayerSwitch active={mapLayer} onChange={handleLayerChange} />
 
       {/* Error toast */}
       {error && <div className="sdm-error">{error}</div>}
