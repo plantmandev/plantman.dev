@@ -9,17 +9,20 @@ type OccurrenceRow = {
 
 export async function GET(
   request: Request,
-  { params }: { params: { species: string } }
+  { params }: { params: Promise<{ species: string }> }
 ) {
   try {
     const { species } = await params;
     const speciesName = decodeURIComponent(species);
-    
+
+    console.log('🔍 Occurrence API called for:', speciesName);
+
     const speciesResult = await query<{ id: number }>(`
       SELECT id FROM species WHERE scientific_name = $1
     `, [speciesName]);
 
     if (speciesResult.length === 0) {
+      console.log('❌ Species not found in DB:', speciesName);
       return NextResponse.json(
         { error: 'Species not found' },
         { status: 404 }
@@ -27,6 +30,7 @@ export async function GET(
     }
 
     const speciesId = speciesResult[0].id;
+    console.log('✅ Species ID:', speciesId);
 
     const result = await query<OccurrenceRow>(`
       SELECT jsonb_build_object(
@@ -46,15 +50,18 @@ export async function GET(
       FROM lepidoptera_occurrences
       WHERE species_id = $1
         AND observed_date IS NOT NULL
-        AND data_tier = 1
     `, [speciesId]);
 
     if (!result[0]?.geojson) {
+      console.log('⚠️ No occurrences found for species ID:', speciesId);
       return NextResponse.json({
         type: 'FeatureCollection',
         features: []
       });
     }
+
+    const featureCount = result[0].geojson?.features?.length ?? 0;
+    console.log('📍 Returning', featureCount, 'features for', speciesName);
 
     return NextResponse.json(result[0].geojson);
   } catch (error) {

@@ -27,8 +27,6 @@ const STEP_OPTIONS = [
   { label: "All Time",  days: -1 },
 ];
 
-// When "All Time" is active, advance playback by this many days per tick
-// (days=-1 would go backward, so we use a real positive step instead)
 const ALL_TIME_STEP_DAYS = 30;
 
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
@@ -57,6 +55,13 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
+// Auto-derives SVG path from scientific name slug.
+// Drop file in /public/species/ and it appears automatically.
+function getSpeciesImage(scientificName: string): string {
+  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `/species/${slug}.svg`;
+}
+
 // ── Year block ───────────────────────────────────────────────────────────────
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
   return (
@@ -69,35 +74,17 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
   );
 }
 
-// Maps scientific name → SVG filename in /public/species/
-// Add entries here as you create more pixel art
-const SPECIES_IMAGES: Record<string, string> = {
-  "danaus plexippus":   "/species/danaus-plexippus.svg",
-  "vanessa cardui":     "/species/vanessa-cardui.svg",
-  "vanessa atalanta":   "/species/vanessa-atalanta.svg",
-  "junonia coenia":     "/species/junonia-coenia.svg",
-  "papilio polyxenes":  "/species/papilio-polyxenes.svg",
-};
-
-function getSpeciesImage(scientificName: string): string {
-  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  return `/species/${slug}.svg`;
-}
-
 // ── Species card ─────────────────────────────────────────────────────────────
 function SpeciesCard({ sp, isSelected, onClick }: any) {
-  const imgSrc = getSpeciesImage(sp.scientificName);
   return (
     <button onClick={onClick} className={`sdm-card${isSelected ? " selected" : ""}`}>
-      {/* Image / placeholder square */}
       <div className="sdm-card-image">
-  <img
-    src={getSpeciesImage(sp.scientificName)}
-    alt={sp.commonName}
-    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-  />
-</div>
-      {/* Text body */}
+        <img
+          src={getSpeciesImage(sp.scientificName)}
+          alt={sp.commonName}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      </div>
       <div className="sdm-card-body">
         <div className="sdm-card-header">
           <div className="sdm-card-dot" style={{ background: `rgb(${sp.color.join(",")})` }} />
@@ -189,21 +176,22 @@ function LayerSwitch({ active, onChange }: { active: MapLayer; onChange: (l: Map
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
-  const [mounted, setMounted]                   = useState(false);
-  const [canvasReady, setCanvasReady]           = useState(false);
-  const [data, setData]                         = useState<any[]>([]);
-  const [timeRange, setTimeRange]               = useState<[number, number]>([0, 1]);
-  const [currentTime, setCurrentTime]           = useState(0);
-  const [isPlaying, setIsPlaying]               = useState(false);
-  const [species, setSpecies]                   = useState<Species[]>([]);
-  const [selectedSpecies, setSelectedSpecies]   = useState<Species | null>(null);
-  const [loading, setLoading]                   = useState(true);
-  const [error, setError]                       = useState<string | null>(null);
-  const [showStepMenu, setShowStepMenu]         = useState(false);
-  const [selectedStep, setSelectedStep]         = useState(STEP_OPTIONS[2]);
-  const [mapLayer, setMapLayer]                 = useState<MapLayer>("occurrence");
-  const [sdmOpacity, setSdmOpacity]             = useState(0.65);
-  const [viewState, setViewState]               = useState<any>(INITIAL_VIEW);
+  const [mounted, setMounted]                 = useState(false);
+  const [canvasReady, setCanvasReady]         = useState(false);
+  const [data, setData]                       = useState<any[]>([]);
+  const [timeRange, setTimeRange]             = useState<[number, number]>([0, 1]);
+  const [currentTime, setCurrentTime]         = useState(0);
+  const [isPlaying, setIsPlaying]             = useState(false);
+  const [species, setSpecies]                 = useState<Species[]>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
+  const [loading, setLoading]                 = useState(true);
+  const [error, setError]                     = useState<string | null>(null);
+  const [showStepMenu, setShowStepMenu]       = useState(false);
+  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2]);
+  const [mapLayer, setMapLayer]               = useState<MapLayer>("occurrence");
+  const [sdmOpacity, setSdmOpacity]           = useState(0.65);
+  const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
+  const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -225,12 +213,12 @@ export default function SDMPage() {
           const actualObs = item.actual_obs ? Math.round(parseFloat(item.actual_obs)) : undefined;
           return {
             scientificName: item.species_name,
-            commonName: item.common_name || item.species_name,
-            fileName: toFileName(item.species_name),
-            color: colorRGB,
-            actualObs: actualObs && !isNaN(actualObs) ? actualObs : undefined,
-            status: item.status ?? "",
-            category: item.category ?? "lepidoptera",
+            commonName:     item.common_name || item.species_name,
+            fileName:       toFileName(item.species_name),
+            color:          colorRGB,
+            actualObs:      actualObs && !isNaN(actualObs) ? actualObs : undefined,
+            status:         item.status ?? "",
+            category:       item.category ?? "lepidoptera",
           };
         });
 
@@ -252,15 +240,20 @@ export default function SDMPage() {
       try {
         setLoading(true);
         setError(null);
+
+        console.log("🦋 Fetching occurrences for:", selectedSpecies.scientificName);
+
         const res = await fetch(`/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}`);
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const geojson = await res.json();
         if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
 
+        console.log("📍 Features returned:", geojson.features.length);
+
         const points = geojson.features.map((f: any) => {
           try {
             return {
-              position: f.geometry.coordinates,
+              position:  f.geometry.coordinates,
               timestamp: new Date(f.properties.eventDate).getTime(),
             };
           } catch { return null; }
@@ -279,20 +272,24 @@ export default function SDMPage() {
         const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
         const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
         const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
-        try {
-          const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
-          const { longitude, latitude, zoom } = vp.fitBounds(
-            [[minLng, minLat], [maxLng, maxLat]],
-            { padding: 60 }
-          );
-          setViewState({
-            longitude, latitude,
-            zoom: Math.min(zoom, 8),
-            transitionDuration: 1200,
-            transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
-          });
-        } catch {
-          // degenerate extent (single point etc.) — leave view unchanged
+        // Only fly to extent if we haven't already fit this species
+        if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
+          try {
+            const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
+            const { longitude, latitude, zoom } = vp.fitBounds(
+              [[minLng, minLat], [maxLng, maxLat]],
+              { padding: 60 }
+            );
+            setViewState({
+              longitude, latitude,
+              zoom: Math.min(zoom, 8),
+              transitionDuration: 1200,
+              transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
+            });
+            fittedSpeciesRef.current = selectedSpecies.scientificName;
+          } catch {
+            // degenerate extent — leave view unchanged
+          }
         }
 
         setData(points);
@@ -300,17 +297,16 @@ export default function SDMPage() {
         setCurrentTime(min);
         setLoading(false);
       } catch (err) {
+        console.error("❌ Occurrence load failed:", err);
         setError(err instanceof Error ? err.message : "Failed to load data");
+        setData([]);
         setLoading(false);
       }
     };
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  // ── Playback ────────────────────────────────────────────────────────────────
-  // Bug fix: when selectedStep.days === -1 ("All Time"), using days directly
-  // as the increment would subtract 1 day per tick (goes backward).
-  // Instead we use ALL_TIME_STEP_DAYS as the playback step.
+  // Playback
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
     const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
@@ -353,37 +349,37 @@ export default function SDMPage() {
   const layers = [
     ...(mapLayer === "occurrence" ? [
       new ScatterplotLayer({
-        id: "occurrences",
+        id:             "occurrences",
         data,
-        getPosition: (d: any) => d.position,
+        getPosition:    (d: any) => d.position,
         getFilterValue: (d: any) => d.timestamp,
         filterRange:
           selectedStep.days === -1
             ? [timeRange[0], currentTime]
             : [currentTime - timeWindowMs, currentTime],
-        extensions: [new DataFilterExtension({ filterSize: 1 })],
-        getFillColor: selectedSpecies?.color ?? [255, 255, 255],
-        getRadius: 3000,
+        extensions:      [new DataFilterExtension({ filterSize: 1 })],
+        getFillColor:    selectedSpecies?.color ?? [255, 255, 255],
+        getRadius:       3000,
         radiusMinPixels: 1.5,
         radiusMaxPixels: 4,
-        opacity: 0.75,
-        pickable: false,
+        opacity:         0.75,
+        pickable:        false,
       }),
     ] : []),
 
     ...(mapLayer === "sdm" ? [
       new TileLayer({
-        id: "sdm-raster",
-        data: "https://placeholder-sdm-tiles/{z}/{x}/{y}.png",
-        minZoom: 0,
-        maxZoom: 12,
+        id:       "sdm-raster",
+        data:     "https://placeholder-sdm-tiles/{z}/{x}/{y}.png",
+        minZoom:  0,
+        maxZoom:  12,
         tileSize: 256,
         renderSubLayers: (props: any) => {
           const { bbox } = props.tile;
           const bounds: [number, number, number, number] = [
-            bbox.west ?? bbox.left,
+            bbox.west  ?? bbox.left,
             bbox.south ?? bbox.bottom,
-            bbox.east ?? bbox.right,
+            bbox.east  ?? bbox.right,
             bbox.north ?? bbox.top,
           ];
           return new BitmapLayer(props, { image: props.data, bounds, opacity: sdmOpacity });
@@ -394,8 +390,8 @@ export default function SDMPage() {
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
     month: "numeric",
-    day: "numeric",
-    year: "numeric",
+    day:   "numeric",
+    year:  "numeric",
   });
 
   const progressPct =
@@ -461,42 +457,29 @@ export default function SDMPage() {
           )}
         </div>
 
-        {/* Playback — fades out in SDM mode */}
+        {/* Playback — hidden in SDM mode */}
         <div className={`sdm-block sdm-playback${isSdm ? " sdm-hidden" : ""}`}>
-
-          {/* Row 1: play · stats · interval */}
           <div className="sdm-playback-row">
-
-            {/* Large play/pause */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="sdm-play-btn"
-            >
+            <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn">
               {isPlaying ? "||" : "▶"}
             </button>
 
-            {/* Total Records */}
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Total Records</span>
               <span className="sdm-stat-value">{loading ? "…" : data.length.toLocaleString()}</span>
             </div>
 
-            {/* Date */}
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Date</span>
               <span className="sdm-stat-value">{currentDate}</span>
             </div>
 
-            {/* Interval — label+value left, arrow button right */}
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
                 <span className="sdm-stat-value">{selectedStep.label}</span>
               </div>
-              <button
-                onClick={() => setShowStepMenu(!showStepMenu)}
-                className="sdm-interval-arrow"
-              >
+              <button onClick={() => setShowStepMenu(!showStepMenu)} className="sdm-interval-arrow">
                 ▼
               </button>
               {showStepMenu && (
@@ -515,27 +498,34 @@ export default function SDMPage() {
             </div>
           </div>
 
-          {/* Progress bar */}
           <div
+            role="slider"
+            aria-label="Playback position"
+            aria-valuenow={Math.round(progressPct)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            tabIndex={0}
             className="sdm-progress-track"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
-              const pct = (e.clientX - rect.left) / rect.width;
+              const pct  = (e.clientX - rect.left) / rect.width;
               setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
               setIsPlaying(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + selectedStep.days * 86400000, timeRange[1]));
+              if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - selectedStep.days * 86400000, timeRange[0]));
             }}
           >
             <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
 
-          {/* Year grid */}
           <div className="sdm-years">
             {YEARS.map((y) => (
               <YearBlock key={y} year={y} status={yearStatuses[y]} />
             ))}
           </div>
 
-          {/* Category row */}
           <div className="sdm-category-row">
             <div className="sdm-category-item">
               <div className="sdm-category-swatch" />
@@ -550,7 +540,7 @@ export default function SDMPage() {
           </div>
         </div>
 
-        {/* SDM model info — visible only in SDM mode */}
+        {/* SDM model info */}
         {isSdm && (
           <div className="sdm-block sdm-model-info">
             <div className="sdm-model-info-title">Model Info</div>
@@ -600,7 +590,7 @@ export default function SDMPage() {
         </div>
       </div>
 
-      {/* Layer switch — bottom right of map */}
+      {/* Layer switch */}
       <LayerSwitch active={mapLayer} onChange={handleLayerChange} />
 
       {/* Error toast */}
