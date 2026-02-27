@@ -341,28 +341,30 @@ nav[data-slot="base"] > div {
    ========================================================================== */
 
 .sdm-root {
-  position: relative;
+  display: flex;
+  flex-direction: row;
   width: 100%;
   height: calc(100vh - 64px);
   overflow: hidden;
 }
 
 .sdm-map-wrapper {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .sdm-left {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 500px;
-  max-height: calc(100% - 40px);
+  width: 380px;
+  flex-shrink: 0;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   z-index: 10;
+  border-right: 1px solid var(--dark-gray);
+  background: rgba(13, 13, 13, 0.98);
   scrollbar-width: thin;
   scrollbar-color: var(--dark-gray) transparent;
 }
@@ -372,13 +374,10 @@ nav[data-slot="base"] > div {
 .sdm-left::-webkit-scrollbar-thumb { background: var(--dark-gray); }
 
 .sdm-block {
-  background: rgba(13, 13, 13, 0.92);
-  border: 1px solid var(--dark-gray);
-  border-top: none;
+  background: rgba(13, 13, 13, 0.98);
+  border-bottom: 1px solid var(--dark-gray);
   flex-shrink: 0;
 }
-
-.sdm-block:first-child { border-top: 1px solid var(--dark-gray); }
 
 /* ── Photo block ─────────────────────────────────────────────────────────── */
 .sdm-photo {
