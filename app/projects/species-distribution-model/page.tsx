@@ -325,27 +325,6 @@ export default function SDMPage() {
   return (
     <div className="sdm-root">
 
-      {/* Map */}
-      <div className="sdm-map-wrapper">
-        <DeckGL
-          controller={true}
-          viewState={viewState}
-          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
-          layers={layers}
-          style={{ width: "100%", height: "100%" }}
-          useDevicePixels={1}
-        >
-          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
-        </DeckGL>
-
-        {/* Loading overlay */}
-        {loading && (
-          <div className="sdm-map-loading">
-            <span className="sdm-map-loading-text">loading</span>
-          </div>
-        )}
-      </div>
-
       {/* Left panel */}
       <div className="sdm-left">
 
@@ -479,6 +458,27 @@ export default function SDMPage() {
             onSelect={handleSelectSpecies}
           />
         </div>
+      </div>
+
+      {/* Map */}
+      <div className="sdm-map-wrapper">
+        <DeckGL
+          controller={true}
+          viewState={viewState}
+          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
+          layers={layers}
+          style={{ width: "100%", height: "100%" }}
+          useDevicePixels={1}
+        >
+          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
+        </DeckGL>
+
+        {/* Loading overlay */}
+        {loading && (
+          <div className="sdm-map-loading">
+            <span className="sdm-map-loading-text">loading</span>
+          </div>
+        )}
       </div>
 
       {/* Error toast */}

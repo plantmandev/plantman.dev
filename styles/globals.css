@@ -675,6 +675,7 @@ nav[data-slot="base"] > div {
   height: 85%;
   object-fit: contain;
   display: block;
+  filter: drop-shadow(0 0 3px rgba(255,255,255,0.15));
 }
 
 .sdm-card-body {
