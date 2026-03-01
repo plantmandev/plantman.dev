@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
+import SupportBar from "@/components/support-bar";
 
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
@@ -483,6 +484,8 @@ export default function SDMPage() {
 
       {/* Error toast */}
       {error && <div className="sdm-error">{error}</div>}
+
+      <SupportBar/>
     </div>
   );
 }

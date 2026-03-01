@@ -11,7 +11,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import Logo from "@/public/plantman Logo (Dark Mode).svg";
+import Logo from "@/public/logos/plantman Logo (Dark Mode).svg";
 
 import AppearanceSwitch from "./appearance-switch";
 
