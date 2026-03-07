@@ -793,17 +793,6 @@ nav[data-slot="base"] > div {
   border-color: #1a7fd4;
 }
 
-/* Coffee — BMAC yellow */
-.sb-btn--coffee {
-  background: #FFDD00;
-  border-color: #FFDD00;
-  color: #0D0D0D;
-}
-
-.sb-btn--coffee:hover {
-  background: #FFE93A;
-  border-color: #FFE93A;
-}
 
 /* Logos */
 .sb-logo {
@@ -811,9 +800,4 @@ nav[data-slot="base"] > div {
   width: auto;
   object-fit: contain;
   flex-shrink: 0;
-}
-
-/* BMAC logo has a lot of padding baked in — compensate */
-.sb-logo--coffee {
-  height: 26px;
 }
