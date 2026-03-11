@@ -19,11 +19,8 @@ const COLOR_PALETTE: [number, number, number][] = [
 ];
 
 const STEP_OPTIONS = [
-  { label: "1 Day",     days: 1  },
   { label: "1 Week",    days: 7  },
   { label: "2 Week(s)", days: 14 },
-  { label: "1 Month",   days: 30 },
-  { label: "3 Months",  days: 90 },
   { label: "All Time",  days: -1 },
 ];
 
@@ -427,13 +424,13 @@ export default function SDMPage() {
           <div className="sdm-category-row">
             <div className="sdm-category-item">
               <div className="sdm-category-swatch" />
-              <span className="sdm-category-label">Nectar Plants</span>
-              <span className="sdm-category-info" title="Nectar plant occurrence data">ℹ</span>
+              {/* <span className="sdm-category-label">Nectar Plants</span>
+              <span className="sdm-category-info" title="Nectar plant occurrence data">ℹ</span> */}
             </div>
             <div className="sdm-category-item">
               <div className="sdm-category-swatch" />
-              <span className="sdm-category-label">Larval Host Plants</span>
-              <span className="sdm-category-info" title="Larval host plant occurrence data">ℹ</span>
+              {/* <span className="sdm-category-label">Larval Host Plants</span>
+              <span className="sdm-category-info" title="Larval host plant occurrence data">ℹ</span> */}
             </div>
           </div>
         </div>
@@ -446,7 +443,7 @@ export default function SDMPage() {
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
           />
-          <SelectorSection
+          {/* <SelectorSection
             title="Nectar Plants"
             items={nectarPlants}
             selectedFileName={selectedSpecies?.fileName ?? ""}
@@ -457,7 +454,7 @@ export default function SDMPage() {
             items={hostPlants}
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
-          />
+          /> */}
         </div>
       </div>
 
