@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, BitmapLayer } from "@deck.gl/layers";
+import { TileLayer } from "@deck.gl/geo-layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
-import SupportBar from "@/components/support-bar";
 
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
@@ -19,12 +19,13 @@ const COLOR_PALETTE: [number, number, number][] = [
 ];
 
 const STEP_OPTIONS = [
-  { label: "1 Week",    days: 7  },
+  { label: "1 Day", days: 1 },
+  { label: "1 Week", days: 7 },
   { label: "2 Week(s)", days: 14 },
-  { label: "All Time",  days: -1 },
+  { label: "1 Month", days: 30 },
+  { label: "3 Months", days: 90 },
+  { label: "All Time", days: -1 },
 ];
-
-const ALL_TIME_STEP_DAYS = 30;
 
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
@@ -50,12 +51,6 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
-function getSpeciesImage(scientificName: string): string {
-  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  return `/species/${slug}.svg`;
-}
-
-// ── Year block ───────────────────────────────────────────────────────────────
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
   return (
     <div className="sdm-year-block">
@@ -67,32 +62,27 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
   );
 }
 
-// ── Species card ─────────────────────────────────────────────────────────────
 function SpeciesCard({ sp, isSelected, onClick }: any) {
   return (
-    <button onClick={onClick} className={`sdm-card${isSelected ? " selected" : ""}`}>
-      <div className="sdm-card-image">
-        <img
-          src={getSpeciesImage(sp.scientificName)}
-          alt={sp.commonName}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+    <button
+      onClick={onClick}
+      className={`sdm-card${isSelected ? " selected" : ""}`}
+    >
+      <div className="sdm-card-header">
+        <div
+          className="sdm-card-dot"
+          style={{ background: `rgb(${sp.color.join(",")})` }}
         />
+        <span className="sdm-card-name">{sp.commonName}</span>
       </div>
-      <div className="sdm-card-body">
-        <div className="sdm-card-header">
-          <div className="sdm-card-dot" style={{ background: `rgb(${sp.color.join(",")})` }} />
-          <span className="sdm-card-name">{sp.commonName}</span>
-        </div>
-        <span className="sdm-card-scientific">{sp.scientificName}</span>
-        {sp.actualObs && (
-          <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
-        )}
-      </div>
+      <span className="sdm-card-scientific">{sp.scientificName}</span>
+      {sp.actualObs && (
+        <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
+      )}
     </button>
   );
 }
 
-// ── Selector section ─────────────────────────────────────────────────────────
 function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   return (
     <div className="sdm-section">
@@ -115,49 +105,48 @@ function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
-  const [mounted, setMounted]                 = useState(false);
-  const [canvasReady, setCanvasReady]         = useState(false);
-  const [data, setData]                       = useState<any[]>([]);
-  const [timeRange, setTimeRange]             = useState<[number, number]>([0, 1]);
-  const [currentTime, setCurrentTime]         = useState(0);
-  const [isPlaying, setIsPlaying]             = useState(false);
-  const [species, setSpecies]                 = useState<Species[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [data, setData] = useState<any[]>([]);
+  const [timeRange, setTimeRange] = useState<[number, number]>([0, 1]);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [species, setSpecies] = useState<Species[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<Species | null>(null);
-  const [loading, setLoading]                 = useState(true);
-  const [error, setError]                     = useState<string | null>(null);
-  const [showStepMenu, setShowStepMenu]       = useState(false);
-  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2]);
-  const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
-  const fittedSpeciesRef                      = React.useRef<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showStepMenu, setShowStepMenu] = useState(false);
+  const [selectedStep, setSelectedStep] = useState(STEP_OPTIONS[2]);
+  const [showTerrain, setShowTerrain] = useState(false);
+  const [terrainOpacity, setTerrainOpacity] = useState(0.25);
+  const [viewState, setViewState] = useState<any>(INITIAL_VIEW);
 
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 500);
   }, []);
 
-  // Load species list
   useEffect(() => {
     if (!mounted || !canvasReady) return;
     const load = async () => {
       try {
         const res = await fetch("/api/species");
         if (!res.ok) throw new Error(`API failed (${res.status})`);
-        const json = await res.json();
-        if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) throw new Error("No data");
 
-        const parsed: Species[] = json.map((item: any, index: number) => {
+        const parsed: Species[] = data.map((item: any, index: number) => {
           const colorRGB = hexToRgb(item.color ?? "") ?? COLOR_PALETTE[index % COLOR_PALETTE.length];
           const actualObs = item.actual_obs ? Math.round(parseFloat(item.actual_obs)) : undefined;
           return {
             scientificName: item.species_name,
-            commonName:     item.common_name || item.species_name,
-            fileName:       toFileName(item.species_name),
-            color:          colorRGB,
-            actualObs:      actualObs && !isNaN(actualObs) ? actualObs : undefined,
-            status:         item.status ?? "",
-            category:       item.category ?? "lepidoptera",
+            commonName: item.common_name || item.species_name,
+            fileName: toFileName(item.species_name),
+            color: colorRGB,
+            actualObs: actualObs && !isNaN(actualObs) ? actualObs : undefined,
+            status: item.status ?? "",
+            category: item.category ?? "lepidoptera",
           };
         });
 
@@ -172,30 +161,20 @@ export default function SDMPage() {
     load();
   }, [mounted, canvasReady]);
 
-  // Load occurrences for selected species
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
-        setIsPlaying(false);
-
-        console.log("🦋 Fetching occurrences for:", selectedSpecies.scientificName);
-
         const res = await fetch(`/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}`);
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const geojson = await res.json();
         if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
 
-        console.log("📍 Features returned:", geojson.features.length);
-
         const points = geojson.features.map((f: any) => {
           try {
-            return {
-              position:  f.geometry.coordinates,
-              timestamp: new Date(f.properties.eventDate).getTime(),
-            };
+            return { position: f.geometry.coordinates, timestamp: new Date(f.properties.eventDate).getTime() };
           } catch { return null; }
         }).filter(Boolean);
 
@@ -205,60 +184,62 @@ export default function SDMPage() {
         const min = ts.reduce((a: number, b: number) => a < b ? a : b);
         const max = ts.reduce((a: number, b: number) => a > b ? a : b);
 
-        // Auto-fit only once per species
-        if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
-          const lngs = points.map((p: any) => p.position[0]);
-          const lats = points.map((p: any) => p.position[1]);
-          const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
-          const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
-          const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
-          const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
-          try {
-            const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
-            const { longitude, latitude, zoom } = vp.fitBounds(
-              [[minLng, minLat], [maxLng, maxLat]],
-              { padding: 60 }
-            );
-            setViewState({
-              longitude, latitude,
-              zoom: Math.min(zoom, 8),
-              transitionDuration: 1200,
-              transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
-            });
-            fittedSpeciesRef.current = selectedSpecies.scientificName;
-          } catch {
-            // degenerate extent — leave view unchanged
-          }
+        // Compute bbox and fly map to fit the species range
+        const lngs = points.map((p: any) => p.position[0]);
+        const lats = points.map((p: any) => p.position[1]);
+        const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
+        const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
+        const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
+        const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
+        try {
+          const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
+          const { longitude, latitude, zoom } = vp.fitBounds(
+            [[minLng, minLat], [maxLng, maxLat]],
+            { padding: 60 }
+          );
+          setViewState({
+            longitude,
+            latitude,
+            zoom: Math.min(zoom, 8),
+            transitionDuration: 1200,
+            transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
+          });
+        } catch {
+          // fitBounds can fail on degenerate extents (single point etc.), leave view as-is
         }
-
         setData(points);
         setTimeRange([min, max]);
         setCurrentTime(min);
         setLoading(false);
       } catch (err) {
-        console.error("❌ Occurrence load failed:", err);
         setError(err instanceof Error ? err.message : "Failed to load data");
-        setData([]);
         setLoading(false);
       }
     };
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  // ── Playback — loops when it reaches the end ─────────────────────────────
+  // ── Playback: advance time, auto-advance to next species at end ──────────
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
-    const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
-        const next = t + stepDays * 24 * 60 * 60 * 1000;
-        // Loop back to start instead of stopping
-        if (next >= timeRange[1]) return timeRange[0];
+        const next = t + selectedStep.days * 24 * 60 * 60 * 1000;
+        if (next >= timeRange[1]) {
+          // Advance to next species (wraps around to first)
+          const currentIndex = species.findIndex((s) => s.fileName === selectedSpecies?.fileName);
+          const nextSpecies = species[(currentIndex + 1) % species.length];
+          if (nextSpecies) {
+            fittedSpeciesRef.current = null; // allow auto-fit for new species
+            setSelectedSpecies(nextSpecies);
+          }
+          return timeRange[1];
+        }
         return next;
       });
     }, 100);
     return () => clearInterval(interval);
-  }, [isPlaying, timeRange, loading, selectedStep]);
+  }, [isPlaying, timeRange, loading, selectedStep, species, selectedSpecies]);
 
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
@@ -279,31 +260,51 @@ export default function SDMPage() {
       : selectedStep.days * 24 * 60 * 60 * 1000;
 
   const layers = [
+    ...(showTerrain
+      ? [
+          new TileLayer({
+            id: "terrain",
+            data: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+            minZoom: 0,
+            maxZoom: 15,
+            tileSize: 256,
+            renderSubLayers: (props: any) => {
+              const { bbox } = props.tile;
+              const bounds: [number, number, number, number] = [
+                bbox.west ?? bbox.left,
+                bbox.south ?? bbox.bottom,
+                bbox.east ?? bbox.right,
+                bbox.north ?? bbox.top,
+              ];
+              return new BitmapLayer(props, { image: props.data, bounds, opacity: terrainOpacity });
+            },
+          }),
+        ]
+      : []),
     new ScatterplotLayer({
-      id:             "occurrences",
+      id: "occurrences",
       data,
-      getPosition:    (d: any) => d.position,
+      getPosition: (d: any) => d.position,
       getFilterValue: (d: any) => d.timestamp,
       filterRange:
         selectedStep.days === -1
           ? [timeRange[0], currentTime]
           : [currentTime - timeWindowMs, currentTime],
-      extensions:      [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor:    selectedSpecies?.color ?? [255, 255, 255],
-      getRadius:       3000,
+      extensions: [new DataFilterExtension({ filterSize: 1 })],
+      getFillColor: selectedSpecies?.color ?? [255, 255, 255],
+      getRadius: 3000,
       radiusMinPixels: 1.5,
       radiusMaxPixels: 4,
-      opacity:         0.75,
-      pickable:        false,
+      opacity: 0.75,
+      pickable: false,
     }),
   ];
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
     month: "numeric",
-    day:   "numeric",
-    year:  "numeric",
+    day: "numeric",
+    year: "numeric",
   });
-
   const progressPct =
     timeRange[1] > timeRange[0]
       ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
@@ -316,17 +317,29 @@ export default function SDMPage() {
       : "missing";
   });
 
-  const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
+  const butterflies = species.filter((s) => !s.category || s.category === "lepidoptera");
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");
-  const hostPlants   = species.filter((s) => s.category === "host_plant");
+  const hostPlants = species.filter((s) => s.category === "host_plant");
 
   return (
     <div className="sdm-root">
+      {/* Map layer */}
+      <div className="sdm-map-wrapper">
+        <DeckGL
+          controller={true}
+          viewState={viewState}
+          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
+          layers={layers}
+          style={{ width: "100%", height: "100%" }}
+          useDevicePixels={1}
+        >
+          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
+        </DeckGL>
+      </div>
 
       {/* Left panel */}
       <div className="sdm-left">
-
-        {/* Photo */}
+        {/* Photo block */}
         <div className="sdm-block sdm-photo">
           <a
             href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`}
@@ -339,7 +352,7 @@ export default function SDMPage() {
           <span className="sdm-photo-unavailable">photo unavailable</span>
         </div>
 
-        {/* Info */}
+        {/* Info block */}
         <div className="sdm-block sdm-info">
           {selectedSpecies ? (
             <>
@@ -352,30 +365,36 @@ export default function SDMPage() {
           )}
         </div>
 
-        {/* Playback */}
+        {/* Playback block */}
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
-            <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn" disabled={loading}>
-              {loading ? "…" : isPlaying ? "||" : "▶"}
+            {/* Play/pause */}
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="sdm-play-btn"
+            >
+              {isPlaying ? "||" : "▶"}
             </button>
 
-            <div className="sdm-stat-col">
-              <span className="sdm-stat-label">Total Records</span>
-              <span className="sdm-stat-value">{loading ? "…" : data.length.toLocaleString()}</span>
-            </div>
-
-            <div className="sdm-stat-col">
-              <span className="sdm-stat-label">Date</span>
-              <span className="sdm-stat-value">{currentDate}</span>
-            </div>
-
-            <div className="sdm-interval-wrapper">
-              <div className="sdm-stat-col">
-                <span className="sdm-stat-label">Interval</span>
-                <span className="sdm-stat-value">{selectedStep.label}</span>
+            {/* Stats */}
+            <div className="sdm-stats">
+              <div className="sdm-stats-labels">
+                <span className="sdm-stats-label">Total Records</span>
+                <span className="sdm-stats-label">Date</span>
               </div>
-              <button onClick={() => setShowStepMenu(!showStepMenu)} className="sdm-interval-arrow">
-                ▼
+              <div className="sdm-stats-values">
+                <span className="sdm-stats-value">{loading ? "…" : data.length.toLocaleString()}</span>
+                <span className="sdm-stats-date">{currentDate}</span>
+              </div>
+            </div>
+
+            {/* Step selector */}
+            <div className="sdm-step-wrapper">
+              <button
+                onClick={() => setShowStepMenu(!showStepMenu)}
+                className="sdm-step-btn"
+              >
+                Step<br />{selectedStep.label} ▼
               </button>
               {showStepMenu && (
                 <div className="sdm-dropdown">
@@ -391,47 +410,32 @@ export default function SDMPage() {
                 </div>
               )}
             </div>
+
+            {/* Color swatch */}
+            <div
+              className="sdm-color-swatch"
+              style={{ background: selectedSpecies ? `rgb(${selectedSpecies.color.join(",")})` : "var(--dark-gray)" }}
+            />
           </div>
 
+          {/* Progress bar */}
           <div
-            role="slider"
-            aria-label="Playback position"
-            aria-valuenow={Math.round(progressPct)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            tabIndex={0}
             className="sdm-progress-track"
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
-              const pct  = (e.clientX - rect.left) / rect.width;
+              const pct = (e.clientX - rect.left) / rect.width;
               setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
               setIsPlaying(false);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + selectedStep.days * 86400000, timeRange[1]));
-              if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - selectedStep.days * 86400000, timeRange[0]));
             }}
           >
             <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
 
+          {/* Year blocks */}
           <div className="sdm-years">
             {YEARS.map((y) => (
               <YearBlock key={y} year={y} status={yearStatuses[y]} />
             ))}
-          </div>
-
-          <div className="sdm-category-row">
-            <div className="sdm-category-item">
-              <div className="sdm-category-swatch" />
-              {/* <span className="sdm-category-label">Nectar Plants</span>
-              <span className="sdm-category-info" title="Nectar plant occurrence data">ℹ</span> */}
-            </div>
-            <div className="sdm-category-item">
-              <div className="sdm-category-swatch" />
-              {/* <span className="sdm-category-label">Larval Host Plants</span>
-              <span className="sdm-category-info" title="Larval host plant occurrence data">ℹ</span> */}
-            </div>
           </div>
         </div>
 
@@ -443,7 +447,7 @@ export default function SDMPage() {
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
           />
-          {/* <SelectorSection
+          <SelectorSection
             title="Nectar Plants"
             items={nectarPlants}
             selectedFileName={selectedSpecies?.fileName ?? ""}
@@ -454,35 +458,40 @@ export default function SDMPage() {
             items={hostPlants}
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
-          /> */}
+          />
         </div>
       </div>
 
-      {/* Map */}
-      <div className="sdm-map-wrapper">
-        <DeckGL
-          controller={true}
-          viewState={viewState}
-          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
-          layers={layers}
-          style={{ width: "100%", height: "100%" }}
-          useDevicePixels={1}
-        >
-          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
-        </DeckGL>
-
-        {/* Loading overlay */}
-        {loading && (
-          <div className="sdm-map-loading">
-            <span className="sdm-map-loading-text">loading</span>
+      {/* Terrain controls */}
+      <div className="sdm-block sdm-controls">
+        <div className="sdm-control-row">
+          <span className="sdm-control-label">Terrain</span>
+          <button
+            onClick={() => setShowTerrain(!showTerrain)}
+            className={`sdm-toggle-btn${showTerrain ? " on" : ""}`}
+          >
+            {showTerrain ? "ON" : "OFF"}
+          </button>
+        </div>
+        {showTerrain && (
+          <div className="sdm-opacity-row">
+            <span className="sdm-control-label">Opacity</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round(terrainOpacity * 100)}
+              onChange={(e) => setTerrainOpacity(parseInt(e.target.value) / 100)}
+            />
+            <span className="sdm-opacity-value">{Math.round(terrainOpacity * 100)}%</span>
           </div>
         )}
       </div>
 
       {/* Error toast */}
-      {error && <div className="sdm-error">{error}</div>}
-
-      <SupportBar/>
+      {error && (
+        <div className="sdm-error">{error}</div>
+      )}
     </div>
   );
 }
