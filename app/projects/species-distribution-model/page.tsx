@@ -8,9 +8,11 @@ import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
 
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
-const Map = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
+const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
+// ── Constants ────────────────────────────────────────────────────────────────
 const INITIAL_VIEW = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
+const TUTORIAL_KEY = "sdm-tutorial-done";
 
 const COLOR_PALETTE: [number, number, number][] = [
   [255, 140, 0], [220, 20, 60], [255, 215, 0], [240, 240, 240],
@@ -28,6 +30,7 @@ const ALL_TIME_STEP_DAYS = 30;
 
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
+// ── Types ────────────────────────────────────────────────────────────────────
 type Species = {
   scientificName: string;
   fileName: string;
@@ -38,6 +41,7 @@ type Species = {
   category?: string;
 };
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
 function toFileName(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-gbif";
 }
@@ -55,7 +59,8 @@ function getSpeciesImage(scientificName: string): string {
   return `/species/${slug}.svg`;
 }
 
-// ── Year block ───────────────────────────────────────────────────────────────
+// ── Sub-components ───────────────────────────────────────────────────────────
+
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
   return (
     <div className="sdm-year-block">
@@ -67,7 +72,6 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
   );
 }
 
-// ── Species card ─────────────────────────────────────────────────────────────
 function SpeciesCard({ sp, isSelected, onClick }: any) {
   return (
     <button onClick={onClick} className={`sdm-card${isSelected ? " selected" : ""}`}>
@@ -92,7 +96,6 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
   );
 }
 
-// ── Selector section ─────────────────────────────────────────────────────────
 function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
   return (
     <div className="sdm-section">
@@ -132,12 +135,51 @@ export default function SDMPage() {
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
+  // ── Tutorial state ───────────────────────────────────────────────────────
+  // null  = tutorial complete / not shown
+  // 1     = highlight species selector  ("select a species")
+  // 2     = highlight interval button   ("choose an interval")
+  // 3     = highlight play button       ("press play")
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
+
+  // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 500);
   }, []);
 
-  // Load species list
+  // ── Init tutorial once on mount ──────────────────────────────────────────
+  // fires once when the first species finishes loading
+const tutorialInitializedRef = React.useRef(false);
+
+useEffect(() => {
+  if (loading) return;                          // still loading — wait
+  if (tutorialInitializedRef.current) return;   // already initialized — skip
+  tutorialInitializedRef.current = true;
+
+  if (typeof window === "undefined") return;
+  const done = localStorage.getItem(TUTORIAL_KEY);
+  if (!done) setTutorialStep(1);
+}, [loading]);
+
+  // ── Tutorial helpers ─────────────────────────────────────────────────────
+  const advanceTutorial = useCallback((fromStep: number) => {
+    setTutorialStep((current) => {
+      if (current !== fromStep) return current; // only advance if we're on the right step
+      if (fromStep >= 3) {
+        localStorage.setItem(TUTORIAL_KEY, "1");
+        return null;
+      }
+      return fromStep + 1;
+    });
+  }, []);
+
+  const skipTutorial = useCallback(() => {
+    setTutorialStep(null);
+    localStorage.setItem(TUTORIAL_KEY, "1");
+  }, []);
+
+  // ── Load species list ────────────────────────────────────────────────────
   useEffect(() => {
     if (!mounted || !canvasReady) return;
     const load = async () => {
@@ -172,7 +214,7 @@ export default function SDMPage() {
     load();
   }, [mounted, canvasReady]);
 
-  // Load occurrences for selected species
+  // ── Load occurrences for selected species ────────────────────────────────
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
     const load = async () => {
@@ -252,19 +294,21 @@ export default function SDMPage() {
     const interval = setInterval(() => {
       setCurrentTime((t) => {
         const next = t + stepDays * 24 * 60 * 60 * 1000;
-        // Loop back to start instead of stopping
-        if (next >= timeRange[1]) return timeRange[0];
+        if (next >= timeRange[1]) return timeRange[0]; // loop
         return next;
       });
     }, 100);
     return () => clearInterval(interval);
   }, [isPlaying, timeRange, loading, selectedStep]);
 
+  // ── Species selection — advances tutorial step 1 → 2 ────────────────────
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
     setIsPlaying(false);
-  }, []);
+    advanceTutorial(1);
+  }, [advanceTutorial]);
 
+  // ── Early return while canvas initialises ────────────────────────────────
   if (!mounted || !canvasReady) {
     return (
       <div className="sdm-loading">
@@ -273,6 +317,7 @@ export default function SDMPage() {
     );
   }
 
+  // ── Derived values ────────────────────────────────────────────────────────
   const timeWindowMs =
     selectedStep.days === -1
       ? timeRange[1] - timeRange[0]
@@ -320,10 +365,18 @@ export default function SDMPage() {
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");
   const hostPlants   = species.filter((s) => s.category === "host_plant");
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="sdm-root">
 
-      {/* Left panel */}
+      {/* ── Tutorial skip link ─────────────────────────────────────────────── */}
+      {tutorialStep !== null && (
+        <button className="sdm-tutorial-skip" onClick={skipTutorial}>
+          skip tutorial
+        </button>
+      )}
+
+      {/* ── Left panel ───────────────────────────────────────────────────── */}
       <div className="sdm-left">
 
         {/* Photo */}
@@ -355,9 +408,23 @@ export default function SDMPage() {
         {/* Playback */}
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
-            <button onClick={() => setIsPlaying(!isPlaying)} className="sdm-play-btn" disabled={loading}>
-              {loading ? "…" : isPlaying ? "||" : "▶"}
-            </button>
+
+            {/* ── Play button — tutorial step 3 ──────────────────────────── */}
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={() => {
+                  setIsPlaying(!isPlaying);
+                  advanceTutorial(3);
+                }}
+                className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
+                disabled={loading}
+              >
+                {loading ? "…" : isPlaying ? "||" : "▶"}
+              </button>
+              {tutorialStep === 3 && (
+                <div className="sdm-tutorial-tip">03 — press play</div>
+              )}
+            </div>
 
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Total Records</span>
@@ -369,20 +436,39 @@ export default function SDMPage() {
               <span className="sdm-stat-value">{currentDate}</span>
             </div>
 
+            {/* ── Interval button — tutorial step 2 ──────────────────────── */}
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
                 <span className="sdm-stat-value">{selectedStep.label}</span>
               </div>
-              <button onClick={() => setShowStepMenu(!showStepMenu)} className="sdm-interval-arrow">
-                ▼
-              </button>
+
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => {
+                    setShowStepMenu(!showStepMenu);
+                    advanceTutorial(2);
+                  }}
+                  className={`sdm-interval-arrow${tutorialStep === 2 ? " sdm-tutorial-target" : ""}`}
+                >
+                  ▼
+                </button>
+                {tutorialStep === 2 && (
+                  <div className="sdm-tutorial-tip">02 — choose an interval</div>
+                )}
+              </div>
+
               {showStepMenu && (
                 <div className="sdm-dropdown">
                   {STEP_OPTIONS.map((opt) => (
                     <button
                       key={opt.label}
-                      onClick={() => { setSelectedStep(opt); setShowStepMenu(false); }}
+                      onClick={() => {
+                        setSelectedStep(opt);
+                        setShowStepMenu(false);
+                        // Also advance if they pick from dropdown directly
+                        advanceTutorial(2);
+                      }}
                       className={`sdm-dropdown-item${opt.label === selectedStep.label ? " active" : ""}`}
                     >
                       {opt.label}
@@ -393,6 +479,7 @@ export default function SDMPage() {
             </div>
           </div>
 
+          {/* Progress bar */}
           <div
             role="slider"
             aria-label="Playback position"
@@ -415,50 +502,44 @@ export default function SDMPage() {
             <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
           </div>
 
+          {/* Year grid */}
           <div className="sdm-years">
             {YEARS.map((y) => (
               <YearBlock key={y} year={y} status={yearStatuses[y]} />
             ))}
           </div>
 
+          {/* Category row — hidden */}
           <div className="sdm-category-row">
             <div className="sdm-category-item">
               <div className="sdm-category-swatch" />
-              {/* <span className="sdm-category-label">Nectar Plants</span>
-              <span className="sdm-category-info" title="Nectar plant occurrence data">ℹ</span> */}
             </div>
             <div className="sdm-category-item">
               <div className="sdm-category-swatch" />
-              {/* <span className="sdm-category-label">Larval Host Plants</span>
-              <span className="sdm-category-info" title="Larval host plant occurrence data">ℹ</span> */}
             </div>
           </div>
         </div>
 
-        {/* Species selector */}
-        <div className="sdm-block sdm-selector">
+        {/* ── Species selector — tutorial step 1 ─────────────────────────── */}
+        <div
+          className={`sdm-block sdm-selector${tutorialStep === 1 ? " sdm-tutorial-target" : ""}`}
+        >
+          {tutorialStep === 1 && (
+            <div className="sdm-tutorial-tip sdm-tutorial-tip--inset">
+              01 — select a species
+            </div>
+          )}
+
           <SelectorSection
             title="Butterflies"
             items={butterflies}
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
           />
-          {/* <SelectorSection
-            title="Nectar Plants"
-            items={nectarPlants}
-            selectedFileName={selectedSpecies?.fileName ?? ""}
-            onSelect={handleSelectSpecies}
-          />
-          <SelectorSection
-            title="Larval Host Plants"
-            items={hostPlants}
-            selectedFileName={selectedSpecies?.fileName ?? ""}
-            onSelect={handleSelectSpecies}
-          /> */}
         </div>
       </div>
 
-      {/* Map */}
+
       <div className="sdm-map-wrapper">
         <DeckGL
           controller={true}
@@ -471,7 +552,7 @@ export default function SDMPage() {
           <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
         </DeckGL>
 
-        {/* Loading overlay */}
+        {/* Map loading overlay */}
         {loading && (
           <div className="sdm-map-loading">
             <span className="sdm-map-loading-text">loading</span>
@@ -482,7 +563,7 @@ export default function SDMPage() {
       {/* Error toast */}
       {error && <div className="sdm-error">{error}</div>}
 
-      <SupportBar/>
+      <SupportBar />
     </div>
   );
 }
