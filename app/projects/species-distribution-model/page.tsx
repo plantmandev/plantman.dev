@@ -149,18 +149,11 @@ export default function SDMPage() {
   }, []);
 
   // ── Init tutorial once on mount ──────────────────────────────────────────
-  // fires once when the first species finishes loading
-const tutorialInitializedRef = React.useRef(false);
-
-useEffect(() => {
-  if (loading) return;                          // still loading — wait
-  if (tutorialInitializedRef.current) return;   // already initialized — skip
-  tutorialInitializedRef.current = true;
-
-  if (typeof window === "undefined") return;
-  const done = localStorage.getItem(TUTORIAL_KEY);
-  if (!done) setTutorialStep(1);
-}, [loading]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const done = localStorage.getItem(TUTORIAL_KEY);
+    if (!done) setTutorialStep(1);
+  }, []);
 
   // ── Tutorial helpers ─────────────────────────────────────────────────────
   const advanceTutorial = useCallback((fromStep: number) => {
@@ -422,7 +415,7 @@ useEffect(() => {
                 {loading ? "…" : isPlaying ? "||" : "▶"}
               </button>
               {tutorialStep === 3 && (
-                <div className="sdm-tutorial-tip">03 — press play</div>
+                <div className="sdm-tutorial-tip">press play</div>
               )}
             </div>
 
@@ -454,7 +447,7 @@ useEffect(() => {
                   ▼
                 </button>
                 {tutorialStep === 2 && (
-                  <div className="sdm-tutorial-tip">02 — choose an interval</div>
+                  <div className="sdm-tutorial-tip">choose an interval</div>
                 )}
               </div>
 
@@ -526,7 +519,7 @@ useEffect(() => {
         >
           {tutorialStep === 1 && (
             <div className="sdm-tutorial-tip sdm-tutorial-tip--inset">
-              01 — select a species
+              select a species
             </div>
           )}
 
@@ -536,10 +529,24 @@ useEffect(() => {
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
           />
+
+          {/* Uncomment when ready:
+          <SelectorSection
+            title="Nectar Plants"
+            items={nectarPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          />
+          <SelectorSection
+            title="Larval Host Plants"
+            items={hostPlants}
+            selectedFileName={selectedSpecies?.fileName ?? ""}
+            onSelect={handleSelectSpecies}
+          /> */}
         </div>
       </div>
 
-
+      {/* ── Map ──────────────────────────────────────────────────────────── */}
       <div className="sdm-map-wrapper">
         <DeckGL
           controller={true}

@@ -1,44 +1,58 @@
 @import "tailwindcss";
 
-/* Font */
+/* ==========================================================================
+   FONTS
+   ========================================================================== */
+
 *, body, html {
   font-family: Consolas, Monaco, 'Courier New', monospace !important;
 }
 
-/* ── Color variables ─────────────────────────────────────────────────────── */
+/* ==========================================================================
+   COLOR VARIABLES
+   ========================================================================== */
+
 :root {
-  --near-black:  #0D0D0D;
-  --dark-gray:   #1A1A1A;
-  --light-gray:  #999999;
-  --off-white:   #F2F2F2;
-  --background:  #0D0D0D;
-  --foreground:  var(--off-white);
-  --muted:       var(--light-gray);
-  --border:      var(--dark-gray);
+  --near-black: #0D0D0D;
+  --dark-gray:  #1A1A1A;
+  --light-gray: #999999;
+  --off-white:  #F2F2F2;
+  --background: #0D0D0D;
+  --foreground: var(--off-white);
+  --muted:      var(--light-gray);
+  --border:     var(--dark-gray);
 }
 
 .light {
-  --near-black:  #FAFAFA;
-  --dark-gray:   #E5E5E5;
-  --light-gray:  #666666;
-  --off-white:   #0D0D0D;
-  --background:  #FAFAFA;
-  --foreground:  #0D0D0D;
-  --muted:       #666666;
-  --border:      #E5E5E5;
+  --near-black: #FAFAFA;
+  --dark-gray:  #E5E5E5;
+  --light-gray: #666666;
+  --off-white:  #0D0D0D;
+  --background: #FAFAFA;
+  --foreground: #0D0D0D;
+  --muted:      #666666;
+  --border:     #E5E5E5;
 }
 
-/* ── Base ────────────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+html {
+  scroll-behavior: smooth;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 main {
@@ -48,21 +62,9 @@ main {
   overflow: hidden;
 }
 
-html {
-  scroll-behavior: smooth;
-  overflow: hidden;
-}
-
 ::selection {
   background-color: var(--foreground);
   color: var(--background);
-}
-
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--foreground);
-  outline-offset: 4px;
-  border-radius: 2px;
 }
 
 button {
@@ -72,13 +74,26 @@ button {
   color: var(--foreground);
 }
 
-/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* ==========================================================================
+   SCROLLBAR
+   ========================================================================== */
+
 ::-webkit-scrollbar       { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
-/* ── Navbar ──────────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   NAVBAR
+   ========================================================================== */
+
 nav[data-slot="base"] {
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -96,18 +111,14 @@ nav[data-slot="base"] > div {
   position: relative;
   color: var(--foreground);
   text-decoration: none;
-  transition: all 0.2s ease;
   padding: 0.5rem 0;
   font-weight: 400;
   letter-spacing: 0.01em;
+  transition: all 0.2s ease;
 }
 
-.navbar-item:hover { color: var(--muted); }
-
-.navbar-item.active {
-  font-weight: 700;
-  color: var(--foreground);
-}
+.navbar-item:hover        { color: var(--muted); }
+.navbar-item.active       { font-weight: 700; color: var(--foreground); }
 
 .navbar-item.active::after {
   content: '';
@@ -126,6 +137,7 @@ nav[data-slot="base"] > div {
 }
 
 /* ── Mobile menu ─────────────────────────────────────────────────────────── */
+
 .mobile-menu-container { position: relative; }
 
 .hamburger-button {
@@ -172,16 +184,19 @@ nav[data-slot="base"] > div {
   padding: 1rem 0;
   display: block;
   font-size: 1.25rem;
-  transition: all 0.2s ease;
   font-weight: 400;
   letter-spacing: 0.02em;
+  transition: all 0.2s ease;
 }
 
 .mobile-menu-item:hover          { color: var(--muted); padding-left: 0.5rem; }
 .mobile-menu-item.active         { font-weight: 700; color: var(--foreground); }
 .mobile-menu-item.active::before { content: '→ '; margin-right: 0.5rem; }
 
-/* ── Hero ────────────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   HERO
+   ========================================================================== */
+
 .hero-section {
   padding: 4rem 0;
   background-color: var(--dark-gray);
@@ -235,15 +250,9 @@ nav[data-slot="base"] > div {
   color: var(--background);
 }
 
-.hero-quote {
-  padding: 0;
-  font-style: italic;
-  color: var(--muted);
-  margin: 0;
-}
-
-.hero-quote p    { margin: 0 0 0.5rem 0; font-size: 0.875rem; line-height: 1.5; }
-.hero-quote cite { font-size: 0.75rem; font-style: normal; display: block; color: var(--muted); }
+.hero-quote        { padding: 0; font-style: italic; color: var(--muted); margin: 0; }
+.hero-quote p      { margin: 0 0 0.5rem 0; font-size: 0.875rem; line-height: 1.5; }
+.hero-quote cite   { font-size: 0.75rem; font-style: normal; display: block; color: var(--muted); }
 
 .hero-actions {
   display: flex;
@@ -259,20 +268,22 @@ nav[data-slot="base"] > div {
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease;
   border: 1px solid var(--foreground);
+  transition: all 0.2s ease;
 }
 
-.hero-button.primary          { background-color: var(--foreground); color: var(--background); }
-.hero-button.primary:hover    { background-color: var(--dark-gray); color: var(--foreground); }
-.hero-button.secondary        { background-color: transparent; color: var(--foreground); }
-.hero-button.secondary:hover  { background-color: var(--foreground); color: var(--background); }
+.hero-button.primary         { background-color: var(--foreground); color: var(--background); }
+.hero-button.primary:hover   { background-color: var(--dark-gray); color: var(--foreground); }
+.hero-button.secondary       { background-color: transparent; color: var(--foreground); }
+.hero-button.secondary:hover { background-color: var(--foreground); color: var(--background); }
 
-.hero-image { display: flex; justify-content: center; align-items: start; }
-
+.hero-image  { display: flex; justify-content: center; align-items: start; }
 .profile-img { width: 300px; height: auto; object-fit: cover; }
 
-/* ── Footer ──────────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+
 .footer {
   width: 100%;
   border-top: 1px solid var(--border);
@@ -302,42 +313,133 @@ nav[data-slot="base"] > div {
 
 .footer-link:hover { color: var(--muted); }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  nav[data-slot="base"] > div,
-  .hero-content,
-  .footer-content { max-width: 70%; }
+/* ==========================================================================
+   PROJECTS SECTION
+   ========================================================================== */
+
+.projects-section {
+  padding: 4rem 0;
+  background-color: var(--background);
 }
 
-@media (max-width: 992px) {
-  nav[data-slot="base"] > div,
-  .footer-content { max-width: 80%; }
-  .hero-content {
-    max-width: 80%;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-  }
-  .hero-image { justify-content: start; }
+.projects-content {
+  max-width: 60%;
+  margin: 0 auto;
 }
 
-@media (max-width: 768px) {
-  nav[data-slot="base"] > div,
-  .hero-content,
-  .footer-content { max-width: 90%; }
-  .hero-name { font-size: 2rem; }
-}
-
-@media (max-width: 576px) {
-  nav[data-slot="base"] > div,
-  .hero-content,
-  .footer-content { max-width: 95%; }
-  .hero-section  { padding: 2rem 0; }
-  .hero-name     { font-size: 1.75rem; }
-  .profile-img   { width: 250px; }
+.projects-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 2rem 0;
+  letter-spacing: 0.02em;
 }
 
 /* ==========================================================================
-   SDM PAGE — Species Distribution Model
+   PROJECT CARD
+   ========================================================================== */
+
+.project-card {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  background: var(--dark-gray);
+  border: 1px solid #2a2a2a;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.project-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 1.1rem 1.25rem;
+}
+
+.project-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin-bottom: 0.1rem;
+}
+
+.project-card-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--light-gray);
+}
+
+.project-card-meta-item svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+.project-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.project-card-description {
+  font-size: 0.8rem;
+  color: var(--light-gray);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.project-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.project-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid #3a3a3a;
+  background: #222222;
+  color: var(--foreground);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.project-card-btn--primary       { padding: 0.28rem 0.65rem; }
+.project-card-btn--icon          { width: 28px; height: 28px; justify-content: center; padding: 0; }
+
+.project-card-btn--primary:hover,
+.project-card-btn--icon:hover {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+
+.project-card-image-wrapper {
+  flex-shrink: 0;
+  width: 150px;
+  min-height: 100%;
+  overflow: hidden;
+  background: #111;
+}
+
+.project-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ==========================================================================
+   SDM — SPECIES DISTRIBUTION MODEL
    ========================================================================== */
 
 .sdm-root {
@@ -355,6 +457,7 @@ nav[data-slot="base"] > div {
 }
 
 /* ── Left panel ──────────────────────────────────────────────────────────── */
+
 .sdm-left {
   width: 500px;
   flex-shrink: 0;
@@ -373,7 +476,8 @@ nav[data-slot="base"] > div {
   flex-shrink: 0;
 }
 
-/* ── Photo block ─────────────────────────────────────────────────────────── */
+/* ── Photo ───────────────────────────────────────────────────────────────── */
+
 .sdm-photo {
   width: 100%;
   height: 200px;
@@ -415,7 +519,8 @@ nav[data-slot="base"] > div {
   color: var(--background);
 }
 
-/* ── Info block ──────────────────────────────────────────────────────────── */
+/* ── Info ────────────────────────────────────────────────────────────────── */
+
 .sdm-info { padding: 14px 16px; }
 
 .sdm-common-name {
@@ -440,7 +545,8 @@ nav[data-slot="base"] > div {
   line-height: 1.6;
 }
 
-/* ── Playback block ──────────────────────────────────────────────────────── */
+/* ── Playback ────────────────────────────────────────────────────────────── */
+
 .sdm-playback { padding: 12px 14px; }
 
 .sdm-playback-row {
@@ -466,16 +572,8 @@ nav[data-slot="base"] > div {
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.sdm-play-btn:hover {
-  background: var(--off-white);
-  color: var(--background);
-}
-
-.sdm-play-btn:disabled {
-  border-color: #444;
-  color: #444;
-  cursor: default;
-}
+.sdm-play-btn:hover    { background: var(--off-white); color: var(--background); }
+.sdm-play-btn:disabled { border-color: #444; color: #444; cursor: default; }
 
 .sdm-stat-col {
   display: flex;
@@ -484,16 +582,8 @@ nav[data-slot="base"] > div {
   flex-shrink: 0;
 }
 
-.sdm-stat-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--off-white);
-}
-
-.sdm-stat-value {
-  font-size: 11px;
-  color: var(--light-gray);
-}
+.sdm-stat-label { font-size: 11px; font-weight: 700; color: var(--off-white); }
+.sdm-stat-value { font-size: 11px; color: var(--light-gray); }
 
 .sdm-interval-wrapper {
   position: relative;
@@ -519,10 +609,7 @@ nav[data-slot="base"] > div {
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.sdm-interval-arrow:hover {
-  background: var(--off-white);
-  color: var(--background);
-}
+.sdm-interval-arrow:hover { background: var(--off-white); color: var(--background); }
 
 .sdm-dropdown {
   position: absolute;
@@ -549,11 +636,12 @@ nav[data-slot="base"] > div {
   transition: color 0.1s ease;
 }
 
-.sdm-dropdown-item:last-child { border-bottom: none; }
+.sdm-dropdown-item:last-child         { border-bottom: none; }
 .sdm-dropdown-item:hover,
-.sdm-dropdown-item.active     { color: var(--off-white); font-weight: 700; }
+.sdm-dropdown-item.active             { color: var(--off-white); font-weight: 700; }
 
 /* ── Progress bar ────────────────────────────────────────────────────────── */
+
 .sdm-progress-track {
   width: 100%;
   height: 6px;
@@ -569,6 +657,7 @@ nav[data-slot="base"] > div {
 }
 
 /* ── Year grid ───────────────────────────────────────────────────────────── */
+
 .sdm-years {
   display: flex;
   justify-content: space-between;
@@ -594,10 +683,10 @@ nav[data-slot="base"] > div {
 .sdm-year-cell.partial  { background: #f59e0b; border-color: #f59e0b; }
 .sdm-year-cell.missing  { background: transparent; color: #c0392b; border-color: #555; }
 
-/* ── Category row — HIDDEN ───────────────────────────────────────────────── */
 .sdm-category-row { display: none; }
 
 /* ── Species selector ────────────────────────────────────────────────────── */
+
 .sdm-selector {
   padding: 16px;
   flex: 1;
@@ -606,15 +695,15 @@ nav[data-slot="base"] > div {
   scrollbar-width: thin;
   scrollbar-color: var(--dark-gray) transparent;
   min-height: 0;
-  position: relative; /* needed for tutorial tip positioning */
+  position: relative;
 }
 
 .sdm-selector::-webkit-scrollbar       { width: 4px; }
 .sdm-selector::-webkit-scrollbar-track { background: transparent; }
 .sdm-selector::-webkit-scrollbar-thumb { background: var(--dark-gray); }
 
-.sdm-section              { margin-bottom: 20px; }
-.sdm-section:last-child   { margin-bottom: 0; }
+.sdm-section            { margin-bottom: 20px; }
+.sdm-section:last-child { margin-bottom: 0; }
 
 .sdm-section-title {
   font-size: 11px;
@@ -629,11 +718,11 @@ nav[data-slot="base"] > div {
 
 .sdm-section-empty { font-size: 11px; color: var(--light-gray); font-style: italic; }
 
-/* ── Hide plant sections ─────────────────────────────────────────────────── */
 .sdm-section--nectar,
 .sdm-section--host { display: none; }
 
 /* ── Species cards ───────────────────────────────────────────────────────── */
+
 .sdm-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 
 .sdm-card {
@@ -642,11 +731,11 @@ nav[data-slot="base"] > div {
   padding: 0;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .sdm-card:hover                   { border-color: var(--light-gray); }
@@ -683,13 +772,7 @@ nav[data-slot="base"] > div {
   pointer-events: none;
 }
 
-.sdm-card-body {
-  padding: 6px 8px 7px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
+.sdm-card-body    { padding: 6px 8px 7px; display: flex; flex-direction: column; gap: 2px; }
 .sdm-card-header  { display: flex; align-items: center; gap: 5px; }
 .sdm-card-dot     { width: 6px; height: 6px; flex-shrink: 0; }
 
@@ -706,7 +789,8 @@ nav[data-slot="base"] > div {
 .sdm-card-scientific { font-size: 9px; color: var(--light-gray); font-style: italic; }
 .sdm-card-obs        { font-size: 8px; color: #555; }
 
-/* ── Error toast ─────────────────────────────────────────────────────────── */
+/* ── Overlays & toasts ───────────────────────────────────────────────────── */
+
 .sdm-error {
   position: absolute;
   bottom: 20px;
@@ -721,7 +805,6 @@ nav[data-slot="base"] > div {
   white-space: nowrap;
 }
 
-/* ── Map loading overlay ─────────────────────────────────────────────────── */
 .sdm-map-loading {
   position: absolute;
   inset: 0;
@@ -746,7 +829,6 @@ nav[data-slot="base"] > div {
   50%       { opacity: 0.2; }
 }
 
-/* ── Loading screen ──────────────────────────────────────────────────────── */
 .sdm-loading {
   display: flex;
   align-items: center;
@@ -757,7 +839,10 @@ nav[data-slot="base"] > div {
 
 .sdm-loading-text { font-size: 13px; color: var(--light-gray); }
 
-/* ── Support bar ─────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   SUPPORT BAR
+   ========================================================================== */
+
 .sb-root {
   position: fixed;
   bottom: 24px;
@@ -767,8 +852,6 @@ nav[data-slot="base"] > div {
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  width: auto;
-  height: auto;
   pointer-events: auto;
 }
 
@@ -786,45 +869,17 @@ nav[data-slot="base"] > div {
   text-decoration: none;
   white-space: nowrap;
   border: 1px solid transparent;
-  transition: border-color 0.2s ease, background 0.2s ease;
   max-width: 240px;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.sb-btn--flash {
-  background: #3a3a3a;
-  border-color: #555;
-  color: #F2F2F2;
-}
+.sb-btn--flash        { background: #3a3a3a; border-color: #555; color: #F2F2F2; }
+.sb-btn--flash:hover  { background: #444; border-color: #1a7fd4; }
+.sb-btn--coffee       { background: #FFDD00; border-color: #FFDD00; color: #0D0D0D; }
+.sb-btn--coffee:hover { background: #FFE93A; border-color: #FFE93A; }
 
-.sb-btn--flash:hover {
-  background: #444;
-  border-color: #1a7fd4;
-}
-
-.sb-btn--coffee {
-  background: #FFDD00;
-  border-color: #FFDD00;
-  color: #0D0D0D;
-}
-
-.sb-btn--coffee:hover {
-  background: #FFE93A;
-  border-color: #FFE93A;
-}
-
-.sb-logo {
-  height: 22px;
-  width: auto;
-  max-width: 80px;
-  object-fit: contain;
-  flex-shrink: 0;
-  display: block;
-}
-
-.sb-logo--coffee {
-  height: 26px;
-  max-width: 90px;
-}
+.sb-logo         { height: 22px; width: auto; max-width: 80px; object-fit: contain; flex-shrink: 0; display: block; }
+.sb-logo--coffee { height: 26px; max-width: 90px; }
 
 /* ==========================================================================
    TUTORIAL
@@ -835,14 +890,12 @@ nav[data-slot="base"] > div {
   50%       { box-shadow: 0 0 20px 6px rgba(242, 242, 242, 0.45); }
 }
 
-/* Applied to any element that is the current tutorial target */
 .sdm-tutorial-target {
   animation: sdm-glow 1.4s ease-in-out infinite;
   position: relative;
   z-index: 50;
 }
 
-/* Tooltip bubble — points DOWN by default (arrow on bottom) */
 .sdm-tutorial-tip {
   position: absolute;
   left: 50%;
@@ -859,7 +912,6 @@ nav[data-slot="base"] > div {
   text-transform: uppercase;
   pointer-events: none;
   z-index: 200;
-  /* arrow pointing down */
 }
 
 .sdm-tutorial-tip::after {
@@ -872,11 +924,7 @@ nav[data-slot="base"] > div {
   border-top-color: var(--off-white);
 }
 
-/* Variant: arrow points UP (tip sits below the element) */
-.sdm-tutorial-tip--below {
-  bottom: auto;
-  top: calc(100% + 10px);
-}
+.sdm-tutorial-tip--below { bottom: auto; top: calc(100% + 10px); }
 
 .sdm-tutorial-tip--below::after {
   top: auto;
@@ -885,19 +933,16 @@ nav[data-slot="base"] > div {
   border-bottom-color: var(--off-white);
 }
 
-/* Variant: tip anchored inside the selector panel (top of scroll area) */
 .sdm-tutorial-tip--inset {
   position: absolute;
   top: 0;
   left: 50%;
   transform: translateX(-50%);
   bottom: auto;
-  /* no arrow needed — lives inside the panel */
 }
 
 .sdm-tutorial-tip--inset::after { display: none; }
 
-/* Skip link — fixed bottom-left */
 .sdm-tutorial-skip {
   position: fixed;
   bottom: 24px;
@@ -917,3 +962,58 @@ nav[data-slot="base"] > div {
 }
 
 .sdm-tutorial-skip:hover { color: var(--off-white); }
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+  nav[data-slot="base"] > div,
+  .hero-content,
+  .footer-content,
+  .projects-content { max-width: 70%; }
+}
+
+@media (max-width: 992px) {
+  nav[data-slot="base"] > div,
+  .footer-content,
+  .projects-content { max-width: 80%; }
+
+  .hero-content {
+    max-width: 80%;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .hero-image { justify-content: start; }
+}
+
+@media (max-width: 768px) {
+  nav[data-slot="base"] > div,
+  .hero-content,
+  .footer-content,
+  .projects-content { max-width: 90%; }
+
+  .hero-name { font-size: 2rem; }
+
+  .project-card { flex-direction: column-reverse; }
+
+  .project-card-image-wrapper {
+    width: 100%;
+    height: 160px;
+    min-height: unset;
+  }
+}
+
+@media (max-width: 576px) {
+  nav[data-slot="base"] > div,
+  .hero-content,
+  .footer-content,
+  .projects-content { max-width: 95%; }
+
+  .hero-section,
+  .projects-section { padding: 2rem 0; }
+
+  .hero-name   { font-size: 1.75rem; }
+  .profile-img { width: 250px; }
+}

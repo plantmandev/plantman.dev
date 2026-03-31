@@ -7,6 +7,10 @@ import { siteConfig } from "@/config/site";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 
+import { config } from "@fortawesome/fontawesome-svg-core";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+config.autoAddCss = false;
+
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
