@@ -23,7 +23,7 @@ export const SiteLogo = () => {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const logo = mounted && resolvedTheme === "light" ? LightLogo : DarkLogo;
+  const logo = mounted && resolvedTheme === "dark" ? LightLogo : DarkLogo;
 
   return (
     <Image alt="Plantman Logo" height={30} priority src={logo} width={30} />
@@ -31,7 +31,6 @@ export const SiteLogo = () => {
 };
 
 const navItems = [
-  { label: "About",        href: "/about"        },
   { label: "Projects",     href: "/projects"     },
   { label: "Certificates", href: "/certificates" },
 ] as const;
@@ -56,18 +55,11 @@ export function Navbar() {
   return (
     <HeroUINavbar
       className="bg-[var(--near-black)] border-b border-[var(--dark-gray)]"
-      height="60px"
+      height="72px"
       maxWidth="full"
     >
-      <NavbarContent className="sm:hidden" justify="start">
-        <NavbarBrand>
-          <Link aria-label="Home" className="flex items-center" href="/">
-            <SiteLogo />
-          </Link>
-        </NavbarBrand>
-      </NavbarContent>
-
-      <NavbarContent className="hidden sm:flex" justify="start">
+      {/* Left — logo (always present, single block) */}
+      <NavbarContent justify="start">
         <NavbarBrand>
           <Link
             aria-label="Home"
@@ -79,6 +71,7 @@ export function Navbar() {
         </NavbarBrand>
       </NavbarContent>
 
+      {/* Center — desktop nav links */}
       <NavbarContent className="hidden sm:flex gap-12" justify="center">
         {navItems.map((item) => (
           <NavbarItem key={item.href}>
@@ -92,6 +85,7 @@ export function Navbar() {
         ))}
       </NavbarContent>
 
+      {/* Right — theme toggle + mobile hamburger */}
       <NavbarContent justify="end">
         <NavbarItem className="hidden sm:flex">
           <AppearanceSwitch />
