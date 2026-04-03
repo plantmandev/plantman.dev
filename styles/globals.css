@@ -584,7 +584,7 @@ nav[data-slot="base"] {
 
 .cert-card-image-wrapper {
   flex-shrink: 0;
-  width: 150px;
+  width: 200px;
   min-height: 100%;
   overflow: hidden;
   background: #111;
