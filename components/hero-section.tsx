@@ -45,7 +45,7 @@ export default function HeroSection() {
 
           {/* Actions */}
           <div className="hero-actions">
-            <a href="/resume.pdf" download className="hero-button primary">
+            <a href="/Resume.pdf" download className="hero-button primary">
               Resume
               <FontAwesomeIcon icon={faDownload} />
             </a>
