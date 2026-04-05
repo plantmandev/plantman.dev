@@ -1,19 +1,12 @@
 "use client";
 
-import {
-  Navbar as HeroUINavbar,
-  NavbarBrand,
-  NavbarContent,
-  NavbarItem,
-} from "@heroui/navbar";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
-
-import DarkLogo  from "@/public/logos/plantman Logo (Dark Mode).svg";
-import LightLogo from "@/public/logos/plantman Logo (Light Mode).svg";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBars } from "@fortawesome/free-solid-svg-icons";
 
 import AppearanceSwitch from "./appearance-switch";
 
@@ -23,10 +16,12 @@ export const SiteLogo = () => {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const logo = mounted && resolvedTheme === "dark" ? LightLogo : DarkLogo;
+  const src = mounted && resolvedTheme === "light"
+    ? "/logos/plantman Logo (Light Mode).svg"
+    : "/logos/plantman Logo (Dark Mode).svg";
 
   return (
-    <Image alt="Plantman Logo" height={30} priority src={logo} width={30} />
+    <Image alt="Plantman Logo" height={32} priority src={src} width={32} />
   );
 };
 
@@ -35,16 +30,6 @@ const navItems = [
   { label: "Certificates", href: "/certificates" },
 ] as const;
 
-const HamburgerButton = ({ onClick }: { onClick: () => void }) => (
-  <button aria-label="Open menu" className="hamburger-button" onClick={onClick}>
-    <svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <line x1="0" y1="1"  x2="28" y2="1"  stroke="currentColor" strokeWidth="2" />
-      <line x1="0" y1="10" x2="28" y2="10" stroke="currentColor" strokeWidth="2" />
-      <line x1="0" y1="19" x2="28" y2="19" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  </button>
-);
-
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -52,67 +37,57 @@ export function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  return (
-    <HeroUINavbar
-      className="bg-[var(--near-black)] border-b border-[var(--dark-gray)]"
-      height="72px"
-      maxWidth="full"
-    >
-      {/* Left — logo (always present, single block) */}
-      <NavbarContent justify="start">
-        <NavbarBrand>
-          <Link
-            aria-label="Home"
-            className="flex items-center transition-opacity hover:opacity-70"
-            href="/"
-          >
-            <SiteLogo />
-          </Link>
-        </NavbarBrand>
-      </NavbarContent>
+  useEffect(() => { setIsMenuOpen(false); }, [pathname]);
 
-      {/* Center — desktop nav links */}
-      <NavbarContent className="hidden sm:flex gap-12" justify="center">
-        {navItems.map((item) => (
-          <NavbarItem key={item.href}>
+  return (
+    <nav className="navbar">
+      <div className="navbar-inner">
+
+        <Link href="/" aria-label="Home" className="navbar-logo">
+          <SiteLogo />
+        </Link>
+
+        <div className="navbar-links">
+          {navItems.map((item) => (
             <Link
-              className={`navbar-item ${isActive(item.href) ? "active" : ""}`}
+              key={item.href}
               href={item.href}
+              className={`navbar-item${isActive(item.href) ? " active" : ""}`}
             >
               {item.label}
             </Link>
-          </NavbarItem>
-        ))}
-      </NavbarContent>
+          ))}
+        </div>
 
-      {/* Right — theme toggle + mobile hamburger */}
-      <NavbarContent justify="end">
-        <NavbarItem className="hidden sm:flex">
-          <AppearanceSwitch />
-        </NavbarItem>
-
-        <NavbarItem className="sm:hidden">
-          <div className="mobile-menu-container">
-            <HamburgerButton onClick={() => setIsMenuOpen(!isMenuOpen)} />
-            {isMenuOpen && (
-              <div className="mobile-dropdown">
-                {navItems.map((item, index) => (
-                  <Link
-                    key={item.href}
-                    className={`mobile-dropdown-item ${
-                      index !== navItems.length - 1 ? "bordered" : ""
-                    }`}
-                    href={item.href}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            )}
+        <div className="navbar-right">
+          <div className="navbar-theme">
+            <AppearanceSwitch />
           </div>
-        </NavbarItem>
-      </NavbarContent>
-    </HeroUINavbar>
+
+          <button
+            className="hamburger-button"
+            aria-label="Toggle menu"
+            onClick={() => setIsMenuOpen((o) => !o)}
+          >
+            <FontAwesomeIcon icon={faBars} style={{ width: 18, height: 18 }} />
+          </button>
+        </div>
+      </div>
+
+      {isMenuOpen && (
+        <div className="mobile-dropdown">
+          {navItems.map((item, i) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`mobile-dropdown-item${i < navItems.length - 1 ? " bordered" : ""}${isActive(item.href) ? " active" : ""}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </nav>
   );
 }

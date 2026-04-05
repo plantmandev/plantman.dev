@@ -6,13 +6,16 @@ import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const INITIAL_VIEW = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
-const TUTORIAL_KEY = "sdm-tutorial-done";
+const INITIAL_VIEW  = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
+const TUTORIAL_KEY  = "sdm-tutorial-done";
+const PAGE_SIZE     = 30;
 
 const COLOR_PALETTE: [number, number, number][] = [
   [255, 140, 0], [220, 20, 60], [255, 215, 0], [240, 240, 240],
@@ -54,11 +57,6 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
-function getSpeciesImage(scientificName: string): string {
-  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-  return `/species/${slug}.svg`;
-}
-
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
@@ -70,6 +68,11 @@ function YearBlock({ year, status }: { year: number; status: "complete" | "inges
       </div>
     </div>
   );
+}
+
+function getSpeciesImage(scientificName: string): string {
+  const slug = scientificName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  return `/species/${slug}.svg`;
 }
 
 function SpeciesCard({ sp, isSelected, onClick }: any) {
@@ -96,23 +99,57 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
   );
 }
 
-function SelectorSection({ title, items, selectedFileName, onSelect }: any) {
+function SelectorSection({
+  title,
+  items,
+  selectedFileName,
+  onSelect,
+  visibleCount,
+  onLoadMore,
+  loadingMore,
+}: {
+  title: string;
+  items: Species[];
+  selectedFileName: string;
+  onSelect: (sp: Species) => void;
+  visibleCount: number;
+  onLoadMore: () => void;
+  loadingMore: boolean;
+}) {
+  const visible = items.slice(0, visibleCount);
+  const hasMore = visibleCount < items.length;
+
   return (
     <div className="sdm-section">
       <div className="sdm-section-title">{title}</div>
       {items.length === 0 ? (
         <div className="sdm-section-empty">No species loaded</div>
       ) : (
-        <div className="sdm-card-grid">
-          {items.map((sp: any) => (
-            <SpeciesCard
-              key={sp.fileName}
-              sp={sp}
-              isSelected={sp.fileName === selectedFileName}
-              onClick={() => onSelect(sp)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="sdm-card-grid">
+            {visible.map((sp) => (
+              <SpeciesCard
+                key={sp.fileName}
+                sp={sp}
+                isSelected={sp.fileName === selectedFileName}
+                onClick={() => onSelect(sp)}
+              />
+            ))}
+          </div>
+
+          {hasMore && (
+            <button
+              className="sdm-load-more"
+              onClick={onLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore
+                ? <><FontAwesomeIcon icon={faSpinner} spin /> loading…</>
+                : <><FontAwesomeIcon icon={faChevronDown} /> load more <span className="sdm-load-more-count">({items.length - visibleCount})</span></>
+              }
+            </button>
+          )}
+        </>
       )}
     </div>
   );
@@ -133,13 +170,11 @@ export default function SDMPage() {
   const [showStepMenu, setShowStepMenu]       = useState(false);
   const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2]);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
+  const [visibleCount, setVisibleCount]       = useState(PAGE_SIZE);
+  const [loadingMore, setLoadingMore]         = useState(false);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
-  // ── Tutorial state ───────────────────────────────────────────────────────
-  // null  = tutorial complete / not shown
-  // 1     = highlight species selector  ("select a species")
-  // 2     = highlight interval button   ("choose an interval")
-  // 3     = highlight play button       ("press play")
+  // Tutorial: null = done, 1/2/3 = steps
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
@@ -148,7 +183,6 @@ export default function SDMPage() {
     setTimeout(() => setCanvasReady(true), 500);
   }, []);
 
-  // ── Init tutorial once on mount ──────────────────────────────────────────
   useEffect(() => {
     if (typeof window === "undefined") return;
     const done = localStorage.getItem(TUTORIAL_KEY);
@@ -158,7 +192,7 @@ export default function SDMPage() {
   // ── Tutorial helpers ─────────────────────────────────────────────────────
   const advanceTutorial = useCallback((fromStep: number) => {
     setTutorialStep((current) => {
-      if (current !== fromStep) return current; // only advance if we're on the right step
+      if (current !== fromStep) return current;
       if (fromStep >= 3) {
         localStorage.setItem(TUTORIAL_KEY, "1");
         return null;
@@ -170,6 +204,16 @@ export default function SDMPage() {
   const skipTutorial = useCallback(() => {
     setTutorialStep(null);
     localStorage.setItem(TUTORIAL_KEY, "1");
+  }, []);
+
+  // ── Load more handler ────────────────────────────────────────────────────
+  const handleLoadMore = useCallback(() => {
+    setLoadingMore(true);
+    // Small delay so the UI updates before the re-render
+    setTimeout(() => {
+      setVisibleCount((c) => c + PAGE_SIZE);
+      setLoadingMore(false);
+    }, 150);
   }, []);
 
   // ── Load species list ────────────────────────────────────────────────────
@@ -207,7 +251,7 @@ export default function SDMPage() {
     load();
   }, [mounted, canvasReady]);
 
-  // ── Load occurrences for selected species ────────────────────────────────
+  // ── Load occurrences ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
     const load = async () => {
@@ -216,14 +260,10 @@ export default function SDMPage() {
         setError(null);
         setIsPlaying(false);
 
-        console.log("🦋 Fetching occurrences for:", selectedSpecies.scientificName);
-
         const res = await fetch(`/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}`);
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const geojson = await res.json();
         if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
-
-        console.log("📍 Features returned:", geojson.features.length);
 
         const points = geojson.features.map((f: any) => {
           try {
@@ -240,7 +280,6 @@ export default function SDMPage() {
         const min = ts.reduce((a: number, b: number) => a < b ? a : b);
         const max = ts.reduce((a: number, b: number) => a > b ? a : b);
 
-        // Auto-fit only once per species
         if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
           const lngs = points.map((p: any) => p.position[0]);
           const lats = points.map((p: any) => p.position[1]);
@@ -261,9 +300,7 @@ export default function SDMPage() {
               transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
             });
             fittedSpeciesRef.current = selectedSpecies.scientificName;
-          } catch {
-            // degenerate extent — leave view unchanged
-          }
+          } catch { /* degenerate extent — leave view unchanged */ }
         }
 
         setData(points);
@@ -271,7 +308,6 @@ export default function SDMPage() {
         setCurrentTime(min);
         setLoading(false);
       } catch (err) {
-        console.error("❌ Occurrence load failed:", err);
         setError(err instanceof Error ? err.message : "Failed to load data");
         setData([]);
         setLoading(false);
@@ -280,28 +316,26 @@ export default function SDMPage() {
     load();
   }, [selectedSpecies, mounted, canvasReady]);
 
-  // ── Playback — loops when it reaches the end ─────────────────────────────
+  // ── Playback ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
     const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
         const next = t + stepDays * 24 * 60 * 60 * 1000;
-        if (next >= timeRange[1]) return timeRange[0]; // loop
+        if (next >= timeRange[1]) return timeRange[0];
         return next;
       });
     }, 100);
     return () => clearInterval(interval);
   }, [isPlaying, timeRange, loading, selectedStep]);
 
-  // ── Species selection — advances tutorial step 1 → 2 ────────────────────
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
     setIsPlaying(false);
     advanceTutorial(1);
   }, [advanceTutorial]);
 
-  // ── Early return while canvas initialises ────────────────────────────────
   if (!mounted || !canvasReady) {
     return (
       <div className="sdm-loading">
@@ -337,9 +371,7 @@ export default function SDMPage() {
   ];
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
-    month: "numeric",
-    day:   "numeric",
-    year:  "numeric",
+    month: "numeric", day: "numeric", year: "numeric",
   });
 
   const progressPct =
@@ -362,7 +394,6 @@ export default function SDMPage() {
   return (
     <div className="sdm-root">
 
-      {/* ── Tutorial skip link ─────────────────────────────────────────────── */}
       {tutorialStep !== null && (
         <button className="sdm-tutorial-skip" onClick={skipTutorial}>
           skip tutorial
@@ -371,19 +402,6 @@ export default function SDMPage() {
 
       {/* ── Left panel ───────────────────────────────────────────────────── */}
       <div className="sdm-left">
-
-        {/* Photo */}
-        <div className="sdm-block sdm-photo">
-          <a
-            href={`https://en.wikipedia.org/wiki/${selectedSpecies?.scientificName?.replace(" ", "_")}`}
-            target="_blank"
-            rel="noreferrer"
-            className="sdm-wiki-btn"
-          >
-            W
-          </a>
-          <span className="sdm-photo-unavailable">photo unavailable</span>
-        </div>
 
         {/* Info */}
         <div className="sdm-block sdm-info">
@@ -402,7 +420,7 @@ export default function SDMPage() {
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
 
-            {/* ── Play button — tutorial step 3 ──────────────────────────── */}
+            {/* Play button — tutorial step 3 */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => {
@@ -429,7 +447,7 @@ export default function SDMPage() {
               <span className="sdm-stat-value">{currentDate}</span>
             </div>
 
-            {/* ── Interval button — tutorial step 2 ──────────────────────── */}
+            {/* Interval button — tutorial step 2 */}
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
@@ -459,7 +477,6 @@ export default function SDMPage() {
                       onClick={() => {
                         setSelectedStep(opt);
                         setShowStepMenu(false);
-                        // Also advance if they pick from dropdown directly
                         advanceTutorial(2);
                       }}
                       className={`sdm-dropdown-item${opt.label === selectedStep.label ? " active" : ""}`}
@@ -501,19 +518,9 @@ export default function SDMPage() {
               <YearBlock key={y} year={y} status={yearStatuses[y]} />
             ))}
           </div>
-
-          {/* Category row — hidden */}
-          <div className="sdm-category-row">
-            <div className="sdm-category-item">
-              <div className="sdm-category-swatch" />
-            </div>
-            <div className="sdm-category-item">
-              <div className="sdm-category-swatch" />
-            </div>
-          </div>
         </div>
 
-        {/* ── Species selector — tutorial step 1 ─────────────────────────── */}
+        {/* Species selector — tutorial step 1 */}
         <div
           className={`sdm-block sdm-selector${tutorialStep === 1 ? " sdm-tutorial-target" : ""}`}
         >
@@ -528,21 +535,10 @@ export default function SDMPage() {
             items={butterflies}
             selectedFileName={selectedSpecies?.fileName ?? ""}
             onSelect={handleSelectSpecies}
+            visibleCount={visibleCount}
+            onLoadMore={handleLoadMore}
+            loadingMore={loadingMore}
           />
-
-          {/* Uncomment when ready:
-          <SelectorSection
-            title="Nectar Plants"
-            items={nectarPlants}
-            selectedFileName={selectedSpecies?.fileName ?? ""}
-            onSelect={handleSelectSpecies}
-          />
-          <SelectorSection
-            title="Larval Host Plants"
-            items={hostPlants}
-            selectedFileName={selectedSpecies?.fileName ?? ""}
-            onSelect={handleSelectSpecies}
-          /> */}
         </div>
       </div>
 
@@ -559,7 +555,6 @@ export default function SDMPage() {
           <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
         </DeckGL>
 
-        {/* Map loading overlay */}
         {loading && (
           <div className="sdm-map-loading">
             <span className="sdm-map-loading-text">loading</span>
@@ -567,7 +562,6 @@ export default function SDMPage() {
         )}
       </div>
 
-      {/* Error toast */}
       {error && <div className="sdm-error">{error}</div>}
 
       <SupportBar />

@@ -1,38 +1,39 @@
 "use client";
 
-import { SunIcon } from "@heroicons/react/24/outline";
-import { SunIcon as SunIconSolid } from "@heroicons/react/24/solid";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSun, faMoon } from "@fortawesome/free-solid-svg-icons";
 
 export default function AppearanceSwitch() {
   const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   if (!mounted) {
     return (
-      <button className="w-5 h-5" aria-label="Toggle theme">
-        <SunIcon className="w-5 h-5 text-[var(--light-gray)]" />
+      <button
+        aria-label="Toggle theme"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        <FontAwesomeIcon icon={faSun} style={{ width: 20, height: 20, color: "var(--light-gray)" }} />
       </button>
     );
   }
 
+  const isDark = resolvedTheme === "dark";
+
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="transition-all hover:opacity-70"
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
     >
-      {theme === "dark" ? (
-        <SunIcon className="w-5 h-5 text-[var(--light-gray)] transition-all" />
-      ) : (
-        <SunIconSolid className="w-5 h-5 text-[var(--near-black)] transition-all" />
-      )}
+      <FontAwesomeIcon
+        icon={isDark ? faSun : faMoon}
+        style={{ width: 20, height: 20, color: "var(--muted)", transition: "color 0.2s ease" }}
+      />
     </button>
   );
 }
