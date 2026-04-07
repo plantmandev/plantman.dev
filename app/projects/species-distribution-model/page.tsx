@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
@@ -157,6 +158,11 @@ function SelectorSection({
 
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
+  const { resolvedTheme } = useTheme();
+  const mapStyle = resolvedTheme === "light"
+    ? "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
+    : "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
+
   const [mounted, setMounted]                 = useState(false);
   const [canvasReady, setCanvasReady]         = useState(false);
   const [data, setData]                       = useState<any[]>([]);
@@ -552,7 +558,7 @@ export default function SDMPage() {
           style={{ width: "100%", height: "100%" }}
           useDevicePixels={1}
         >
-          <Map mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json" />
+          <Map mapStyle={mapStyle} />
         </DeckGL>
 
         {loading && (

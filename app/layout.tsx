@@ -26,7 +26,18 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="en">
-      <head />
+      <head>
+        <link
+          rel="icon"
+          href="/logos/plantman Logo (Dark Mode).svg"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link
+          rel="icon"
+          href="/logos/plantman Logo (Light Mode).svg"
+          media="(prefers-color-scheme: light)"
+        />
+      </head>
       <body
         className={clsx("min-h-screen bg-background font-sans antialiased")}
       >

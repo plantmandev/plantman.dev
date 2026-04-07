@@ -16,8 +16,10 @@ export const SiteLogo = () => {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const src = mounted && resolvedTheme === "light"
-    ? "/logos/plantman Logo (Light Mode).svg"
+  const src = mounted && resolvedTheme
+    ? resolvedTheme === "light"
+      ? "/logos/plantman Logo (Light Mode).svg"
+      : "/logos/plantman Logo (Dark Mode).svg"
     : "/logos/plantman Logo (Dark Mode).svg";
 
   return (

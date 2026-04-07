@@ -40,29 +40,29 @@
 }
 
 .light {
-  --near-black: #FAFAFA;
-  --dark-gray:  #E5E5E5;
-  --light-gray: #666666;
-  --off-white:  #0D0D0D;
-  --background: #FAFAFA;
-  --foreground: #0D0D0D;
-  --muted:      #666666;
-  --border:     #E5E5E5;
-  --btn-bg:         #E8E8E8;
-  --btn-border:     #CCCCCC;
-  --btn-bg-hover:   #D8D8D8;
-  --btn-border-hover: #999;
-  --card-bg:        #F0F0F0;
-  --card-border:    #DDDDDD;
-  --img-bg:         #E0E0E0;
-  --social-bg:      #E0E0E0;
-  --panel-bg:       rgba(240,240,240,0.98);
-  --sdm-card-bg:    rgba(230,230,230,0.85);
-  --tag-bg:         #E8E8E8;
-  --tag-border:     #CCCCCC;
-  --dot-bg:         #CCCCCC;
-  --dot-border:     #AAAAAA;
-  --progress-track: rgba(0,0,0,0.08);
+  --near-black: #C0C0C0;
+  --dark-gray:  #A8A8A8;
+  --light-gray: #444444;
+  --off-white:  #111111;
+  --background: #B8B8B8;
+  --foreground: #111111;
+  --muted:      #444444;
+  --border:     #909090;
+  --btn-bg:         #A8A8A8;
+  --btn-border:     #888888;
+  --btn-bg-hover:   #989898;
+  --btn-border-hover: #666;
+  --card-bg:        #ABABAB;
+  --card-border:    #8A8A8A;
+  --img-bg:         #9A9A9A;
+  --social-bg:      #A0A0A0;
+  --panel-bg:       rgba(165,165,165,0.98);
+  --sdm-card-bg:    rgba(155,155,155,0.85);
+  --tag-bg:         #A5A5A5;
+  --tag-border:     #888888;
+  --dot-bg:         #999999;
+  --dot-border:     #777777;
+  --progress-track: rgba(0,0,0,0.15);
 }
 
 /* ==========================================================================
@@ -156,7 +156,7 @@ button:focus-visible {
   transition: filter 0.2s ease;
 }
 
-.light .navbar-logo img {
+html.light .navbar-logo img {
   filter: invert(1);
 }
 
@@ -426,6 +426,14 @@ button:focus-visible {
 
 .project-filter-btn:hover  { border-color: var(--foreground); color: var(--foreground); }
 .project-filter-btn.active { border-color: var(--foreground); color: var(--foreground); font-weight: 700; }
+
+.projects-title {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0 0 2rem 0;
+  letter-spacing: 0.02em;
+}
 
 .projects-empty {
   font-size: 0.875rem;
