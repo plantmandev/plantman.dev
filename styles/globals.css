@@ -95,10 +95,19 @@ main {
   overflow-x: hidden;
 }
 
-main > * { margin-top: 0; }
+main > * {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+section {
+  margin: 0;
+  padding: 0;
+}
 
 .ph-root {
-  margin-top: 0;
+  margin: 0;
+  padding: 0;
 }
 
 ::selection {
@@ -447,6 +456,7 @@ html.light .navbar-logo img {
   font-style: italic;
   padding: 2rem 0;
 }
+
 /* ==========================================================================
    PROJECT CARD
    ========================================================================== */
@@ -662,7 +672,8 @@ html.light .navbar-logo img {
   background-color: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
   overflow: hidden;
-  margin-top: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .ph-image-pane {
@@ -1078,6 +1089,28 @@ html.light .navbar-logo img {
 .sdm-card:hover                   { border-color: var(--muted); }
 .sdm-card.selected                { background: var(--btn-bg); border-color: var(--foreground); }
 .sdm-card.selected .sdm-card-name { font-weight: 700; }
+
+.sdm-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sdm-card.disabled:hover { border-color: var(--border); }
+
+.sdm-card-disabled-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sdm-card-disabled-x {
+  color: var(--muted);
+  opacity: 0.7;
+}
 
 .sdm-card-image {
   width: 100%;

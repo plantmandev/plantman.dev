@@ -7,7 +7,7 @@ import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faSpinner, faXmark } from "@fortawesome/free-solid-svg-icons";
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
@@ -78,18 +78,31 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
       disabled={sp.disabled}
       title={sp.disabled ? "Temporarily unavailable — large dataset, tiles coming soon" : undefined}
     >
-      <div className="sdm-card-image" style={sp.disabled ? { opacity: 0.3 } : undefined}>
+      <div className="sdm-card-image">
         <img
           src={getSpeciesImage(sp.scientificName)}
           alt={sp.commonName}
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
+        {sp.disabled && (
+          <div className="sdm-card-disabled-overlay">
+            <svg
+              className="sdm-card-disabled-x"
+              viewBox="0 0 100 100"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ width: "55%", height: "55%" }}
+            >
+              <line x1="10" y1="10" x2="90" y2="90" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+              <line x1="90" y1="10" x2="10" y2="90" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+            </svg>
+          </div>
+        )}
       </div>
-      <div className="sdm-card-body" style={sp.disabled ? { opacity: 0.4 } : undefined}>
+      <div className="sdm-card-body">
         <div className="sdm-card-header">
           <div
             className="sdm-card-dot"
-            style={{ background: sp.disabled ? "#666" : `rgb(${sp.color.join(",")})` }}
+            style={{ background: sp.disabled ? "var(--muted)" : `rgb(${sp.color.join(",")})` }}
           />
           <span className="sdm-card-name">{sp.commonName}</span>
         </div>
@@ -98,7 +111,7 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
           <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
         )}
         {sp.disabled && (
-          <span className="sdm-card-obs" style={{ color: "#888" }}>tiles coming soon</span>
+          <span className="sdm-card-obs">tiles coming soon</span>
         )}
       </div>
     </button>
@@ -183,7 +196,6 @@ export default function SDMPage() {
   const [loadingMore, setLoadingMore]         = useState(false);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
-  // Tutorial: null = done, 1/2/3 = steps
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
@@ -249,7 +261,6 @@ export default function SDMPage() {
         });
         parsed.sort((a, b) => (b.actualObs ?? 0) - (a.actualObs ?? 0));
         setSpecies(parsed);
-        // Auto-select first non-disabled species
         const firstEnabled = parsed.find((s) => !s.disabled) ?? parsed[0] ?? null;
         setSelectedSpecies(firstEnabled);
       } catch (err) {
@@ -418,12 +429,11 @@ export default function SDMPage() {
             <>
               <p className="sdm-common-name">{selectedSpecies.commonName}</p>
               <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
-              {selectedSpecies.disabled && (
-                <p className="sdm-description" style={{ color: "#888" }}>
+              {selectedSpecies.disabled ? (
+                <p className="sdm-description">
                   This species has a very large dataset. Vector tile support is coming soon.
                 </p>
-              )}
-              {!selectedSpecies.disabled && (
+              ) : (
                 <p className="sdm-description">Species description will be loaded from the database.</p>
               )}
             </>
@@ -435,7 +445,7 @@ export default function SDMPage() {
         {/* Playback */}
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
-            {/* Play button — tutorial step 3 */}
+
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => {
@@ -451,19 +461,21 @@ export default function SDMPage() {
                 <div className="sdm-tutorial-tip">press play</div>
               )}
             </div>
+
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Total Records</span>
               <span className="sdm-stat-value">
                 {loading ? "…" : selectedSpecies?.disabled ? "—" : data.length.toLocaleString()}
               </span>
             </div>
+
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Date</span>
               <span className="sdm-stat-value">
                 {selectedSpecies?.disabled ? "—" : currentDate}
               </span>
             </div>
-            {/* Interval button — tutorial step 2 */}
+
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
@@ -608,5 +620,3 @@ export default function SDMPage() {
     </div>
   );
 }
-
-
