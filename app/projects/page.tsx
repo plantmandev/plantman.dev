@@ -8,12 +8,12 @@ const FEATURED: HighlightedProject[] = [
   {
     title: "Species Distribution Model",
     description: "Interactive visualization of butterfly occurrence data across North America, built with deck.gl and PostGIS. Temporal animation lets you scrub through observations from 2000–2024.",
-    date: "January 01, 2026",
+    date: "January 16, 2026",
     readTime: "10 min read",
     tags: ["Python", "GIS", "deck.gl", "scikit-learn", "PostGIS"],
-    image: "/screenshots/sdm.png",
+    video: "/thumbnails/species-distribution-model-thumbnail.mp4",
     demoHref: "/projects/species-distribution-model",
-    githubHref: "https://github.com/plantmandev/plantman.dev",
+    githubHref: "https://github.com/plantmandev/species-distribution-model",
   },
   {
     title: "Butterfly Population Analysis",
@@ -21,7 +21,6 @@ const FEATURED: HighlightedProject[] = [
     date: "March 15, 2025",
     readTime: "8 min read",
     tags: ["R", "GBIF", "iNaturalist", "ggplot2"],
-    image: "/screenshots/butterfly-analysis.png",
     demoHref: "/projects/butterfly-population",
     githubHref: "https://github.com/plantmandev/plantman.dev",
   },

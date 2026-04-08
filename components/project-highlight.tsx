@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendar,
@@ -18,7 +17,8 @@ export type HighlightedProject = {
   date: string;
   readTime?: string;
   tags?: string[];
-  image?: string;       // screenshot / thumbnail
+  image?: string;        // static image path (fallback)
+  video?: string;        // video path e.g. /thumbnails/species-distribution-model-thumbnail.mp4
   imageAlt?: string;
   demoHref?: string;
   githubHref?: string;
@@ -38,14 +38,14 @@ export default function ProjectHighlight({
   projects,
   interval = INTERVAL_DEFAULT,
 }: Props) {
-  const [active, setActive]       = useState(0);
-  const [progress, setProgress]   = useState(0);
-  const [fading, setFading]       = useState(false);
-  const timerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const frameRef  = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
-  const startRef  = useRef<number>(performance.now());
+  const [active, setActive]     = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [fading, setFading]     = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const frameRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
+  const startRef = useRef<number>(performance.now());
 
-  // ── Go to a specific slide ──────────────────────────────────────────────────
+  // ── Go to a specific slide ────────────────────────────────────────────────
   const goTo = useCallback(
     (index: number) => {
       if (index === active) return;
@@ -60,7 +60,7 @@ export default function ProjectHighlight({
     [active]
   );
 
-  // ── Progress bar via rAF ───────────────────────────────────────────────────
+  // ── Progress bar via rAF ──────────────────────────────────────────────────
   useEffect(() => {
     startRef.current = performance.now();
 
@@ -79,7 +79,7 @@ export default function ProjectHighlight({
     };
   }, [active, interval]);
 
-  // ── Auto-advance timer ─────────────────────────────────────────────────────
+  // ── Auto-advance timer ────────────────────────────────────────────────────
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setFading(true);
@@ -117,9 +117,21 @@ export default function ProjectHighlight({
   return (
     <section className="ph-root">
 
-      {/* ── Left: project image ─────────────────────────────────────────── */}
+      {/* ── Left: project media ───────────────────────────────────────────── */}
       <div className="ph-image-pane">
-        {project.image ? (
+        {project.video ? (
+          <video
+            key={project.video}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={`ph-image ${fading ? "ph-fading" : ""}`}
+            style={{ objectFit: "cover", width: "100%", height: "100%" }}
+          >
+            <source src={project.video} type="video/mp4" />
+          </video>
+        ) : project.image ? (
           <img
             src={project.image}
             alt={project.imageAlt ?? project.title}
@@ -131,13 +143,13 @@ export default function ProjectHighlight({
           </div>
         )}
 
-        {/* Progress bar anchored to the bottom of the image pane */}
+        {/* Progress bar */}
         <div className="ph-progress-track">
           <div className="ph-progress-fill" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
-      {/* ── Right: content ──────────────────────────────────────────────── */}
+      {/* ── Right: content ────────────────────────────────────────────────── */}
       <div className={`ph-content ${fading ? "ph-fading" : ""}`}>
 
         {/* Top row: meta + dots */}
@@ -155,7 +167,6 @@ export default function ProjectHighlight({
             )}
           </div>
 
-          {/* Pagination dots */}
           <div className="ph-dots" role="tablist" aria-label="Project slides">
             {projects.map((_, i) => (
               <button
@@ -170,13 +181,9 @@ export default function ProjectHighlight({
           </div>
         </div>
 
-        {/* Title */}
         <h2 className="ph-title">{project.title}</h2>
-
-        {/* Description */}
         <p className="ph-description">{project.description}</p>
 
-        {/* Tags */}
         {project.tags && project.tags.length > 0 && (
           <div className="ph-tags">
             {project.tags.map((tag) => (
@@ -185,15 +192,9 @@ export default function ProjectHighlight({
           </div>
         )}
 
-        {/* Actions */}
         <div className="ph-actions">
           {project.demoHref && (
-            <a
-              href={project.demoHref}
-              target="_blank"
-              rel="noreferrer"
-              className="ph-btn ph-btn--demo"
-            >
+            <a href={project.demoHref} className="ph-btn ph-btn--demo">
               View Demo
               <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
             </a>
@@ -201,8 +202,6 @@ export default function ProjectHighlight({
           {project.githubHref && (
             <a
               href={project.githubHref}
-              target="_blank"
-              rel="noreferrer"
               className="ph-btn ph-btn--icon"
               aria-label="GitHub repository"
             >
