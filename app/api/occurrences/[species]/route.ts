@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
-const MAX_POINTS = 10000;
+const FULL_THRESHOLD = 150000;
 
 type PointRow = {
   lng: number;
@@ -32,22 +33,44 @@ export async function GET(
 
     const speciesId = speciesResult[0].id;
 
-    const rows = await query<PointRow>(`
-      SELECT
-        ST_X(geom) AS lng,
-        ST_Y(geom) AS lat,
-        observed_date,
-        source,
-        data_tier
-      FROM lepidoptera_occurrences
-      WHERE species_id = $1
-        AND observed_date IS NOT NULL
-        AND geom IS NOT NULL
-      LIMIT $2
-    `, [speciesId, MAX_POINTS]);
+    const countResult = await query<{ cnt: string }>(
+      `SELECT COUNT(*) as cnt FROM lepidoptera_occurrences WHERE species_id = $1`,
+      [speciesId]
+    );
+    const total = Number(countResult[0].cnt);
+
+    const rows = await query<PointRow>(
+      total <= FULL_THRESHOLD
+        ? `SELECT
+             ST_X(geom) AS lng,
+             ST_Y(geom) AS lat,
+             observed_date,
+             source,
+             data_tier
+           FROM lepidoptera_occurrences
+           WHERE species_id = $1
+             AND observed_date IS NOT NULL
+             AND geom IS NOT NULL`
+        : `SELECT
+             ST_X(geom) AS lng,
+             ST_Y(geom) AS lat,
+             observed_date,
+             source,
+             data_tier
+           FROM lepidoptera_occurrences
+           WHERE species_id = $1
+             AND observed_date IS NOT NULL
+             AND geom IS NOT NULL
+           ORDER BY RANDOM()
+           LIMIT $2`,
+      total <= FULL_THRESHOLD ? [speciesId] : [speciesId, FULL_THRESHOLD]
+    );
 
     const geojson = {
       type: 'FeatureCollection',
+      sampled: total > FULL_THRESHOLD,
+      total,
+      returned: rows.length,
       features: rows.map(row => ({
         type: 'Feature',
         geometry: {
@@ -72,4 +95,5 @@ export async function GET(
     );
   }
 }
+
 
