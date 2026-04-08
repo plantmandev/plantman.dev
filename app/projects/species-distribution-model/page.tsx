@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
@@ -9,7 +8,6 @@ import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
-
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
@@ -17,21 +15,18 @@ const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.d
 const INITIAL_VIEW  = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
 const TUTORIAL_KEY  = "sdm-tutorial-done";
 const PAGE_SIZE     = 30;
-
 const COLOR_PALETTE: [number, number, number][] = [
   [255, 140, 0], [220, 20, 60], [255, 215, 0], [240, 240, 240],
   [75, 0, 130], [255, 105, 180], [50, 205, 50], [138, 43, 226],
   [0, 191, 255], [255, 69, 0], [147, 112, 219], [34, 139, 34],
 ];
-
 const STEP_OPTIONS = [
-  { label: "1 Week",    days: 7  },
-  { label: "2 Week(s)", days: 14 },
-  { label: "All Time",  days: -1 },
+  { label: "1 Day",    days: 1  },
+  { label: "1 Week",   days: 7  },
+  { label: "2 Weeks",  days: 14 },
+  { label: "All Time", days: -1 },
 ];
-
 const ALL_TIME_STEP_DAYS = 30;
-
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -43,13 +38,13 @@ type Species = {
   actualObs?: number;
   status?: string;
   category?: string;
+  disabled?: boolean;
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function toFileName(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-gbif";
 }
-
 function hexToRgb(hex: string): [number, number, number] | null {
   if (!hex || !hex.startsWith("#") || hex.length !== 7) return null;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -59,7 +54,6 @@ function hexToRgb(hex: string): [number, number, number] | null {
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
-
 function YearBlock({ year, status }: { year: number; status: "complete" | "ingested" | "missing" | "partial" }) {
   return (
     <div className="sdm-year-block">
@@ -78,22 +72,33 @@ function getSpeciesImage(scientificName: string): string {
 
 function SpeciesCard({ sp, isSelected, onClick }: any) {
   return (
-    <button onClick={onClick} className={`sdm-card${isSelected ? " selected" : ""}`}>
-      <div className="sdm-card-image">
+    <button
+      onClick={sp.disabled ? undefined : onClick}
+      className={`sdm-card${isSelected ? " selected" : ""}${sp.disabled ? " disabled" : ""}`}
+      disabled={sp.disabled}
+      title={sp.disabled ? "Temporarily unavailable — large dataset, tiles coming soon" : undefined}
+    >
+      <div className="sdm-card-image" style={sp.disabled ? { opacity: 0.3 } : undefined}>
         <img
           src={getSpeciesImage(sp.scientificName)}
           alt={sp.commonName}
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
       </div>
-      <div className="sdm-card-body">
+      <div className="sdm-card-body" style={sp.disabled ? { opacity: 0.4 } : undefined}>
         <div className="sdm-card-header">
-          <div className="sdm-card-dot" style={{ background: `rgb(${sp.color.join(",")})` }} />
+          <div
+            className="sdm-card-dot"
+            style={{ background: sp.disabled ? "#666" : `rgb(${sp.color.join(",")})` }}
+          />
           <span className="sdm-card-name">{sp.commonName}</span>
         </div>
         <span className="sdm-card-scientific">{sp.scientificName}</span>
         {sp.actualObs && (
           <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
+        )}
+        {sp.disabled && (
+          <span className="sdm-card-obs" style={{ color: "#888" }}>tiles coming soon</span>
         )}
       </div>
     </button>
@@ -119,7 +124,6 @@ function SelectorSection({
 }) {
   const visible = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
-
   return (
     <div className="sdm-section">
       <div className="sdm-section-title">{title}</div>
@@ -137,7 +141,6 @@ function SelectorSection({
               />
             ))}
           </div>
-
           {hasMore && (
             <button
               className="sdm-load-more"
@@ -174,7 +177,7 @@ export default function SDMPage() {
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState<string | null>(null);
   const [showStepMenu, setShowStepMenu]       = useState(false);
-  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2]);
+  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[3]);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const [visibleCount, setVisibleCount]       = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore]         = useState(false);
@@ -215,7 +218,6 @@ export default function SDMPage() {
   // ── Load more handler ────────────────────────────────────────────────────
   const handleLoadMore = useCallback(() => {
     setLoadingMore(true);
-    // Small delay so the UI updates before the re-render
     setTimeout(() => {
       setVisibleCount((c) => c + PAGE_SIZE);
       setLoadingMore(false);
@@ -231,7 +233,6 @@ export default function SDMPage() {
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const json = await res.json();
         if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
-
         const parsed: Species[] = json.map((item: any, index: number) => {
           const colorRGB = hexToRgb(item.color ?? "") ?? COLOR_PALETTE[index % COLOR_PALETTE.length];
           const actualObs = item.actual_obs ? Math.round(parseFloat(item.actual_obs)) : undefined;
@@ -243,12 +244,14 @@ export default function SDMPage() {
             actualObs:      actualObs && !isNaN(actualObs) ? actualObs : undefined,
             status:         item.status ?? "",
             category:       item.category ?? "lepidoptera",
+            disabled:       item.disabled ?? false,
           };
         });
-
         parsed.sort((a, b) => (b.actualObs ?? 0) - (a.actualObs ?? 0));
         setSpecies(parsed);
-        setSelectedSpecies(parsed[0] ?? null);
+        // Auto-select first non-disabled species
+        const firstEnabled = parsed.find((s) => !s.disabled) ?? parsed[0] ?? null;
+        setSelectedSpecies(firstEnabled);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load species");
         setLoading(false);
@@ -260,17 +263,22 @@ export default function SDMPage() {
   // ── Load occurrences ─────────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
+
+    if (selectedSpecies.disabled) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
         setIsPlaying(false);
-
         const res = await fetch(`/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}`);
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const geojson = await res.json();
         if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
-
         const points = geojson.features.map((f: any) => {
           try {
             return {
@@ -279,13 +287,10 @@ export default function SDMPage() {
             };
           } catch { return null; }
         }).filter(Boolean);
-
         const ts = points.map((p: any) => p.timestamp).filter((t: any) => !isNaN(t) && t > 0);
         if (ts.length === 0) throw new Error("No valid timestamps");
-
         const min = ts.reduce((a: number, b: number) => a < b ? a : b);
         const max = ts.reduce((a: number, b: number) => a > b ? a : b);
-
         if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
           const lngs = points.map((p: any) => p.position[0]);
           const lats = points.map((p: any) => p.position[1]);
@@ -308,7 +313,6 @@ export default function SDMPage() {
             fittedSpeciesRef.current = selectedSpecies.scientificName;
           } catch { /* degenerate extent — leave view unchanged */ }
         }
-
         setData(points);
         setTimeRange([min, max]);
         setCurrentTime(min);
@@ -399,7 +403,6 @@ export default function SDMPage() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="sdm-root">
-
       {tutorialStep !== null && (
         <button className="sdm-tutorial-skip" onClick={skipTutorial}>
           skip tutorial
@@ -415,7 +418,14 @@ export default function SDMPage() {
             <>
               <p className="sdm-common-name">{selectedSpecies.commonName}</p>
               <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
-              <p className="sdm-description">Species description will be loaded from the database.</p>
+              {selectedSpecies.disabled && (
+                <p className="sdm-description" style={{ color: "#888" }}>
+                  This species has a very large dataset. Vector tile support is coming soon.
+                </p>
+              )}
+              {!selectedSpecies.disabled && (
+                <p className="sdm-description">Species description will be loaded from the database.</p>
+              )}
             </>
           ) : (
             <p className="sdm-description">Loading…</p>
@@ -425,7 +435,6 @@ export default function SDMPage() {
         {/* Playback */}
         <div className="sdm-block sdm-playback">
           <div className="sdm-playback-row">
-
             {/* Play button — tutorial step 3 */}
             <div style={{ position: "relative" }}>
               <button
@@ -434,7 +443,7 @@ export default function SDMPage() {
                   advanceTutorial(3);
                 }}
                 className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
-                disabled={loading}
+                disabled={loading || selectedSpecies?.disabled}
               >
                 {loading ? "…" : isPlaying ? "||" : "▶"}
               </button>
@@ -442,24 +451,24 @@ export default function SDMPage() {
                 <div className="sdm-tutorial-tip">press play</div>
               )}
             </div>
-
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Total Records</span>
-              <span className="sdm-stat-value">{loading ? "…" : data.length.toLocaleString()}</span>
+              <span className="sdm-stat-value">
+                {loading ? "…" : selectedSpecies?.disabled ? "—" : data.length.toLocaleString()}
+              </span>
             </div>
-
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Date</span>
-              <span className="sdm-stat-value">{currentDate}</span>
+              <span className="sdm-stat-value">
+                {selectedSpecies?.disabled ? "—" : currentDate}
+              </span>
             </div>
-
             {/* Interval button — tutorial step 2 */}
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
                 <span className="sdm-stat-value">{selectedStep.label}</span>
               </div>
-
               <div style={{ position: "relative" }}>
                 <button
                   onClick={() => {
@@ -474,7 +483,6 @@ export default function SDMPage() {
                   <div className="sdm-tutorial-tip">choose an interval</div>
                 )}
               </div>
-
               {showStepMenu && (
                 <div className="sdm-dropdown">
                   {STEP_OPTIONS.map((opt) => (
@@ -505,12 +513,14 @@ export default function SDMPage() {
             tabIndex={0}
             className="sdm-progress-track"
             onClick={(e) => {
+              if (selectedSpecies?.disabled) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const pct  = (e.clientX - rect.left) / rect.width;
               setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
               setIsPlaying(false);
             }}
             onKeyDown={(e) => {
+              if (selectedSpecies?.disabled) return;
               if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + selectedStep.days * 86400000, timeRange[1]));
               if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - selectedStep.days * 86400000, timeRange[0]));
             }}
@@ -535,7 +545,6 @@ export default function SDMPage() {
               select a species
             </div>
           )}
-
           <SelectorSection
             title="Butterflies"
             items={butterflies}
@@ -545,6 +554,28 @@ export default function SDMPage() {
             onLoadMore={handleLoadMore}
             loadingMore={loadingMore}
           />
+          {nectarPlants.length > 0 && (
+            <SelectorSection
+              title="Nectar Plants"
+              items={nectarPlants}
+              selectedFileName={selectedSpecies?.fileName ?? ""}
+              onSelect={handleSelectSpecies}
+              visibleCount={visibleCount}
+              onLoadMore={handleLoadMore}
+              loadingMore={loadingMore}
+            />
+          )}
+          {hostPlants.length > 0 && (
+            <SelectorSection
+              title="Host Plants"
+              items={hostPlants}
+              selectedFileName={selectedSpecies?.fileName ?? ""}
+              onSelect={handleSelectSpecies}
+              visibleCount={visibleCount}
+              onLoadMore={handleLoadMore}
+              loadingMore={loadingMore}
+            />
+          )}
         </div>
       </div>
 
@@ -560,17 +591,22 @@ export default function SDMPage() {
         >
           <Map mapStyle={mapStyle} />
         </DeckGL>
-
-        {loading && (
+        {loading && !selectedSpecies?.disabled && (
           <div className="sdm-map-loading">
             <span className="sdm-map-loading-text">loading</span>
+          </div>
+        )}
+        {selectedSpecies?.disabled && (
+          <div className="sdm-map-loading">
+            <span className="sdm-map-loading-text">vector tiles coming soon</span>
           </div>
         )}
       </div>
 
       {error && <div className="sdm-error">{error}</div>}
-
       <SupportBar />
     </div>
   );
 }
+
+
