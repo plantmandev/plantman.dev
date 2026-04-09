@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const FULL_THRESHOLD = 150000;
+const CHUNK_SIZE = 150000;
 
 type PointRow = {
   lng: number;
@@ -33,44 +33,45 @@ export async function GET(
 
     const speciesId = speciesResult[0].id;
 
-    const countResult = await query<{ cnt: string }>(
-      `SELECT COUNT(*) as cnt FROM lepidoptera_occurrences WHERE species_id = $1`,
-      [speciesId]
-    );
-    const total = Number(countResult[0].cnt);
+    const url = new URL(request.url);
+
+    // Lightweight metadata fetch (date range only)
+    if (url.searchParams.get('meta') === 'true') {
+      const metaResult = await query<{ min_date: string | null; max_date: string | null }>(
+        `SELECT MIN(observed_date)::text AS min_date, MAX(observed_date)::text AS max_date
+         FROM lepidoptera_occurrences
+         WHERE species_id = $1 AND observed_date IS NOT NULL`,
+        [speciesId]
+      );
+      return NextResponse.json({
+        minDate: metaResult[0]?.min_date ?? null,
+        maxDate: metaResult[0]?.max_date ?? null,
+      });
+    }
+
+    const offset = Math.max(0, parseInt(url.searchParams.get('offset') ?? '0') || 0);
 
     const rows = await query<PointRow>(
-      total <= FULL_THRESHOLD
-        ? `SELECT
-             ST_X(geom) AS lng,
-             ST_Y(geom) AS lat,
-             observed_date,
-             source,
-             data_tier
-           FROM lepidoptera_occurrences
-           WHERE species_id = $1
-             AND observed_date IS NOT NULL
-             AND geom IS NOT NULL`
-        : `SELECT
-             ST_X(geom) AS lng,
-             ST_Y(geom) AS lat,
-             observed_date,
-             source,
-             data_tier
-           FROM lepidoptera_occurrences
-           WHERE species_id = $1
-             AND observed_date IS NOT NULL
-             AND geom IS NOT NULL
-           ORDER BY RANDOM()
-           LIMIT $2`,
-      total <= FULL_THRESHOLD ? [speciesId] : [speciesId, FULL_THRESHOLD]
+      `SELECT
+         ST_X(geom) AS lng,
+         ST_Y(geom) AS lat,
+         observed_date,
+         source,
+         data_tier
+       FROM lepidoptera_occurrences
+       WHERE species_id = $1
+         AND observed_date IS NOT NULL
+         AND geom IS NOT NULL
+       ORDER BY observed_date ASC
+       LIMIT $2 OFFSET $3`,
+      [speciesId, CHUNK_SIZE, offset]
     );
 
-    const geojson = {
+    return NextResponse.json({
       type: 'FeatureCollection',
-      sampled: total > FULL_THRESHOLD,
-      total,
+      offset,
       returned: rows.length,
+      hasMore: rows.length === CHUNK_SIZE,
       features: rows.map(row => ({
         type: 'Feature',
         geometry: {
@@ -83,9 +84,7 @@ export async function GET(
           dataTier: row.data_tier,
         },
       })),
-    };
-
-    return NextResponse.json(geojson);
+    });
 
   } catch (error) {
     console.error('Database error:', error);
@@ -95,5 +94,3 @@ export async function GET(
     );
   }
 }
-
-

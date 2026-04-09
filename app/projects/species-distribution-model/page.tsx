@@ -7,7 +7,7 @@ import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faSpinner, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
@@ -21,13 +21,19 @@ const COLOR_PALETTE: [number, number, number][] = [
   [0, 191, 255], [255, 69, 0], [147, 112, 219], [34, 139, 34],
 ];
 const STEP_OPTIONS = [
-  { label: "1 Day",    days: 1  },
   { label: "1 Week",   days: 7  },
   { label: "2 Weeks",  days: 14 },
   { label: "All Time", days: -1 },
 ];
 const ALL_TIME_STEP_DAYS = 30;
 const YEARS = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
+const CHUNK_SIZE = 150000;
+
+function getDefaultStep(obs: number) {
+  if (obs >= 50000) return STEP_OPTIONS[0]; // 1 Week
+  if (obs >= 10000) return STEP_OPTIONS[1]; // 2 Weeks
+  return STEP_OPTIONS[2];                    // All Time
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Species = {
@@ -45,6 +51,13 @@ type Species = {
 function toFileName(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-gbif";
 }
+function roundObs(n: number): string {
+  if (n >= 10000) return (Math.round(n / 1000) * 1000).toLocaleString();
+  if (n >= 1000)  return (Math.round(n / 100)  * 100).toLocaleString();
+  if (n >= 100)   return (Math.round(n / 10)   * 10).toLocaleString();
+  return n.toLocaleString();
+}
+
 function hexToRgb(hex: string): [number, number, number] | null {
   if (!hex || !hex.startsWith("#") || hex.length !== 7) return null;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -76,7 +89,7 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
       onClick={sp.disabled ? undefined : onClick}
       className={`sdm-card${isSelected ? " selected" : ""}${sp.disabled ? " disabled" : ""}`}
       disabled={sp.disabled}
-      title={sp.disabled ? "Temporarily unavailable — large dataset, tiles coming soon" : undefined}
+      title={sp.disabled ? "Temporarily unavailable" : undefined}
     >
       <div className="sdm-card-image">
         <img
@@ -99,19 +112,10 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
         )}
       </div>
       <div className="sdm-card-body">
-        <div className="sdm-card-header">
-          <div
-            className="sdm-card-dot"
-            style={{ background: sp.disabled ? "var(--muted)" : `rgb(${sp.color.join(",")})` }}
-          />
-          <span className="sdm-card-name">{sp.commonName}</span>
-        </div>
+        <span className="sdm-card-name">{sp.commonName}</span>
         <span className="sdm-card-scientific">{sp.scientificName}</span>
-        {sp.actualObs && (
-          <span className="sdm-card-obs">{sp.actualObs.toLocaleString()} obs</span>
-        )}
         {sp.disabled && (
-          <span className="sdm-card-obs">tiles coming soon</span>
+          <span className="sdm-card-obs">temporarily unavailable</span>
         )}
       </div>
     </button>
@@ -190,7 +194,7 @@ export default function SDMPage() {
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState<string | null>(null);
   const [showStepMenu, setShowStepMenu]       = useState(false);
-  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[3]);
+  const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2] ?? STEP_OPTIONS[0]);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const [visibleCount, setVisibleCount]       = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore]         = useState(false);
@@ -201,7 +205,7 @@ export default function SDMPage() {
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true);
-    setTimeout(() => setCanvasReady(true), 500);
+    setTimeout(() => setCanvasReady(true), 800);
   }, []);
 
   useEffect(() => {
@@ -235,6 +239,13 @@ export default function SDMPage() {
       setLoadingMore(false);
     }, 150);
   }, []);
+
+  // ── Auto-select interval based on dataset size ───────────────────────────
+  useEffect(() => {
+    if (!selectedStep) { setSelectedStep(STEP_OPTIONS[2]); return; }
+    if (!selectedSpecies || selectedSpecies.disabled) return;
+    setSelectedStep(getDefaultStep(selectedSpecies.actualObs ?? 0));
+  }, [selectedSpecies, selectedStep]);
 
   // ── Load species list ────────────────────────────────────────────────────
   useEffect(() => {
@@ -271,76 +282,110 @@ export default function SDMPage() {
     load();
   }, [mounted, canvasReady]);
 
-  // ── Load occurrences ─────────────────────────────────────────────────────
+  // ── Load occurrences (chunked, progressive) ──────────────────────────────
   useEffect(() => {
     if (!selectedSpecies || !mounted || !canvasReady) return;
 
     if (selectedSpecies.disabled) {
       setData([]);
+      setError(null);
       setLoading(false);
       return;
     }
 
+    let cancelled = false;
+
     const load = async () => {
+      setLoading(true);
+      setData([]);
+      setTimeRange([0, 1]);
+      setCurrentTime(0);
+      setError(null);
+      setIsPlaying(false);
+
+      let offset = 0;
+      let allPoints: any[] = [];
+
       try {
-        setLoading(true);
-        setError(null);
-        setIsPlaying(false);
-        const res = await fetch(`/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}`);
-        if (!res.ok) throw new Error(`API failed (${res.status})`);
-        const geojson = await res.json();
-        if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
-        const points = geojson.features.map((f: any) => {
-          try {
-            return {
-              position:  f.geometry.coordinates,
-              timestamp: new Date(f.properties.eventDate).getTime(),
-            };
-          } catch { return null; }
-        }).filter(Boolean);
-        const ts = points.map((p: any) => p.timestamp).filter((t: any) => !isNaN(t) && t > 0);
-        if (ts.length === 0) throw new Error("No valid timestamps");
-        const min = ts.reduce((a: number, b: number) => a < b ? a : b);
-        const max = ts.reduce((a: number, b: number) => a > b ? a : b);
-        if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
-          const lngs = points.map((p: any) => p.position[0]);
-          const lats = points.map((p: any) => p.position[1]);
-          const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
-          const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
-          const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
-          const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
-          try {
-            const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
-            const { longitude, latitude, zoom } = vp.fitBounds(
-              [[minLng, minLat], [maxLng, maxLat]],
-              { padding: 60 }
-            );
-            setViewState({
-              longitude, latitude,
-              zoom: Math.min(zoom, 8),
-              transitionDuration: 1200,
-              transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
-            });
-            fittedSpeciesRef.current = selectedSpecies.scientificName;
-          } catch { /* degenerate extent — leave view unchanged */ }
+        while (true) {
+          const res = await fetch(
+            `/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}?offset=${offset}`
+          );
+          if (cancelled) return;
+          if (!res.ok) throw new Error(`API failed (${res.status})`);
+
+          const geojson = await res.json();
+          if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
+
+          const newPoints = geojson.features.map((f: any) => {
+            try {
+              return {
+                position:  f.geometry.coordinates,
+                timestamp: new Date(f.properties.eventDate).getTime(),
+              };
+            } catch { return null; }
+          }).filter((p: any) => p && !isNaN(p.timestamp) && p.timestamp > 0);
+
+          allPoints = [...allPoints, ...newPoints];
+          if (cancelled) return;
+
+          const ts = allPoints.map((p: any) => p.timestamp);
+          if (ts.length === 0 && !geojson.hasMore) throw new Error("No valid timestamps");
+
+          if (ts.length > 0) {
+            const min = ts.reduce((a: number, b: number) => a < b ? a : b);
+            const max = ts.reduce((a: number, b: number) => a > b ? a : b);
+            setData([...allPoints]);
+            setTimeRange([min, max]);
+
+            if (offset === 0) {
+              // First chunk: unblock UI and fit viewport
+              setCurrentTime(min);
+              setLoading(false);
+              if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
+                const lngs = allPoints.map((p: any) => p.position[0]);
+                const lats = allPoints.map((p: any) => p.position[1]);
+                const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
+                const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
+                const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
+                const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
+                try {
+                  const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
+                  const { longitude, latitude, zoom } = vp.fitBounds(
+                    [[minLng, minLat], [maxLng, maxLat]],
+                    { padding: 60 }
+                  );
+                  setViewState({
+                    longitude, latitude,
+                    zoom: Math.min(zoom, 8),
+                    transitionDuration: 1200,
+                    transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
+                  });
+                  fittedSpeciesRef.current = selectedSpecies.scientificName;
+                } catch { /* degenerate extent — leave view unchanged */ }
+              }
+            }
+          }
+
+          if (!geojson.hasMore) break;
+          offset += CHUNK_SIZE;
         }
-        setData(points);
-        setTimeRange([min, max]);
-        setCurrentTime(min);
-        setLoading(false);
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load data");
         setData([]);
         setLoading(false);
       }
     };
+
     load();
+    return () => { cancelled = true; };
   }, [selectedSpecies, mounted, canvasReady]);
 
   // ── Playback ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isPlaying || loading || timeRange[0] === 0) return;
-    const stepDays = selectedStep.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep.days;
+    const stepDays = (selectedStep?.days === -1 ? ALL_TIME_STEP_DAYS : selectedStep?.days) ?? ALL_TIME_STEP_DAYS;
     const interval = setInterval(() => {
       setCurrentTime((t) => {
         const next = t + stepDays * 24 * 60 * 60 * 1000;
@@ -354,6 +399,7 @@ export default function SDMPage() {
   const handleSelectSpecies = useCallback((sp: Species) => {
     setSelectedSpecies(sp);
     setIsPlaying(false);
+    setShowStepMenu(false);
     advanceTutorial(1);
   }, [advanceTutorial]);
 
@@ -366,10 +412,12 @@ export default function SDMPage() {
   }
 
   // ── Derived values ────────────────────────────────────────────────────────
+  const safeStep = selectedStep ?? STEP_OPTIONS[2];
+
   const timeWindowMs =
-    selectedStep.days === -1
+    safeStep.days === -1
       ? timeRange[1] - timeRange[0]
-      : selectedStep.days * 24 * 60 * 60 * 1000;
+      : safeStep.days * 24 * 60 * 60 * 1000;
 
   const layers = [
     new ScatterplotLayer({
@@ -378,7 +426,7 @@ export default function SDMPage() {
       getPosition:    (d: any) => d.position,
       getFilterValue: (d: any) => d.timestamp,
       filterRange:
-        selectedStep.days === -1
+        safeStep.days === -1
           ? [timeRange[0], currentTime]
           : [currentTime - timeWindowMs, currentTime],
       extensions:      [new DataFilterExtension({ filterSize: 1 })],
@@ -431,7 +479,7 @@ export default function SDMPage() {
               <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
               {selectedSpecies.disabled ? (
                 <p className="sdm-description">
-                  This species has a very large dataset. Vector tile support is coming soon.
+                  This species is temporarily unavailable.
                 </p>
               ) : (
                 <p className="sdm-description">Species description will be loaded from the database.</p>
@@ -465,21 +513,21 @@ export default function SDMPage() {
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Total Records</span>
               <span className="sdm-stat-value">
-                {loading ? "…" : selectedSpecies?.disabled ? "—" : data.length.toLocaleString()}
+                {loading ? "…" : selectedSpecies?.disabled ? "—" : roundObs(selectedSpecies?.actualObs ?? data.length)}
               </span>
             </div>
 
             <div className="sdm-stat-col">
               <span className="sdm-stat-label">Date</span>
               <span className="sdm-stat-value">
-                {selectedSpecies?.disabled ? "—" : currentDate}
+                {selectedSpecies?.disabled ? "—" : loading ? "…" : currentDate}
               </span>
             </div>
 
             <div className="sdm-interval-wrapper">
               <div className="sdm-stat-col">
                 <span className="sdm-stat-label">Interval</span>
-                <span className="sdm-stat-value">{selectedStep.label}</span>
+                <span className="sdm-stat-value">{safeStep.label}</span>
               </div>
               <div style={{ position: "relative" }}>
                 <button
@@ -505,7 +553,7 @@ export default function SDMPage() {
                         setShowStepMenu(false);
                         advanceTutorial(2);
                       }}
-                      className={`sdm-dropdown-item${opt.label === selectedStep.label ? " active" : ""}`}
+                      className={`sdm-dropdown-item${opt.label === safeStep.label ? " active" : ""}`}
                     >
                       {opt.label}
                     </button>
@@ -533,8 +581,9 @@ export default function SDMPage() {
             }}
             onKeyDown={(e) => {
               if (selectedSpecies?.disabled) return;
-              if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + selectedStep.days * 86400000, timeRange[1]));
-              if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - selectedStep.days * 86400000, timeRange[0]));
+              const stepMs = (safeStep.days === -1 ? ALL_TIME_STEP_DAYS : safeStep.days) * 86400000;
+              if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + stepMs, timeRange[1]));
+              if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - stepMs, timeRange[0]));
             }}
           >
             <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
@@ -600,6 +649,7 @@ export default function SDMPage() {
           layers={layers}
           style={{ width: "100%", height: "100%" }}
           useDevicePixels={1}
+          onError={(error: Error) => console.warn("DeckGL:", error.message)}
         >
           <Map mapStyle={mapStyle} />
         </DeckGL>
@@ -610,7 +660,7 @@ export default function SDMPage() {
         )}
         {selectedSpecies?.disabled && (
           <div className="sdm-map-loading">
-            <span className="sdm-map-loading-text">vector tiles coming soon</span>
+            <span className="sdm-map-loading-text">temporarily unavailable</span>
           </div>
         )}
       </div>
