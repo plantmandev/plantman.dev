@@ -6,8 +6,25 @@ import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import SupportBar from "@/components/support-bar";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+const SPRITE_FRAMES = 20;
+function SpriteLoader({ size = 36 }: { size?: number }) {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setFrame(f => (f + 1) % SPRITE_FRAMES), 67);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <img
+      src={`/loading-loop/${String(frame).padStart(2, "0")}.png`}
+      width={size}
+      height={size * 1.25}
+      alt=""
+      aria-hidden
+      style={{ display: "block" }}
+    />
+  );
+}
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
@@ -52,10 +69,10 @@ function toFileName(name: string): string {
   return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-gbif";
 }
 function roundObs(n: number): string {
-  if (n >= 10000) return (Math.round(n / 1000) * 1000).toLocaleString();
-  if (n >= 1000)  return (Math.round(n / 100)  * 100).toLocaleString();
-  if (n >= 100)   return (Math.round(n / 10)   * 10).toLocaleString();
-  return n.toLocaleString();
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)} million`;
+  if (n >= 1000)      return `${Math.round(n / 1000)}k`;
+  if (n >= 100)       return `${Math.round(n / 10) * 10}`;
+  return `${n}`;
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -129,7 +146,6 @@ function SelectorSection({
   onSelect,
   visibleCount,
   onLoadMore,
-  loadingMore,
 }: {
   title: string;
   items: Species[];
@@ -137,7 +153,6 @@ function SelectorSection({
   onSelect: (sp: Species) => void;
   visibleCount: number;
   onLoadMore: () => void;
-  loadingMore: boolean;
 }) {
   const visible = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
@@ -159,15 +174,8 @@ function SelectorSection({
             ))}
           </div>
           {hasMore && (
-            <button
-              className="sdm-load-more"
-              onClick={onLoadMore}
-              disabled={loadingMore}
-            >
-              {loadingMore
-                ? <><FontAwesomeIcon icon={faSpinner} spin /> loading…</>
-                : <><FontAwesomeIcon icon={faChevronDown} /> load more <span className="sdm-load-more-count">({items.length - visibleCount})</span></>
-              }
+            <button className="sdm-load-more" onClick={onLoadMore} aria-label={`Load ${items.length - visibleCount} more`}>
+              <SpriteLoader />
             </button>
           )}
         </>
@@ -197,7 +205,6 @@ export default function SDMPage() {
   const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2] ?? STEP_OPTIONS[0]);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const [visibleCount, setVisibleCount]       = useState(PAGE_SIZE);
-  const [loadingMore, setLoadingMore]         = useState(false);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
 
   const [tutorialStep, setTutorialStep] = useState<number | null>(null);
@@ -233,19 +240,15 @@ export default function SDMPage() {
 
   // ── Load more handler ────────────────────────────────────────────────────
   const handleLoadMore = useCallback(() => {
-    setLoadingMore(true);
-    setTimeout(() => {
-      setVisibleCount((c) => c + PAGE_SIZE);
-      setLoadingMore(false);
-    }, 150);
+    setVisibleCount((c) => c + PAGE_SIZE);
   }, []);
 
   // ── Auto-select interval based on dataset size ───────────────────────────
   useEffect(() => {
-    if (!selectedStep) { setSelectedStep(STEP_OPTIONS[2]); return; }
     if (!selectedSpecies || selectedSpecies.disabled) return;
     setSelectedStep(getDefaultStep(selectedSpecies.actualObs ?? 0));
-  }, [selectedSpecies, selectedStep]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpecies]);
 
   // ── Load species list ────────────────────────────────────────────────────
   useEffect(() => {
@@ -339,9 +342,8 @@ export default function SDMPage() {
             setTimeRange([min, max]);
 
             if (offset === 0) {
-              // First chunk: unblock UI and fit viewport
+              // First chunk: initialise time position and fit viewport
               setCurrentTime(min);
-              setLoading(false);
               if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
                 const lngs = allPoints.map((p: any) => p.position[0]);
                 const lats = allPoints.map((p: any) => p.position[1]);
@@ -370,6 +372,8 @@ export default function SDMPage() {
           if (!geojson.hasMore) break;
           offset += CHUNK_SIZE;
         }
+
+        if (!cancelled) setLoading(false);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Failed to load data");
@@ -613,7 +617,7 @@ export default function SDMPage() {
             onSelect={handleSelectSpecies}
             visibleCount={visibleCount}
             onLoadMore={handleLoadMore}
-            loadingMore={loadingMore}
+
           />
           {nectarPlants.length > 0 && (
             <SelectorSection
@@ -623,7 +627,7 @@ export default function SDMPage() {
               onSelect={handleSelectSpecies}
               visibleCount={visibleCount}
               onLoadMore={handleLoadMore}
-              loadingMore={loadingMore}
+  
             />
           )}
           {hostPlants.length > 0 && (
@@ -634,7 +638,7 @@ export default function SDMPage() {
               onSelect={handleSelectSpecies}
               visibleCount={visibleCount}
               onLoadMore={handleLoadMore}
-              loadingMore={loadingMore}
+  
             />
           )}
         </div>
