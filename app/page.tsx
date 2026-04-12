@@ -12,25 +12,7 @@ export default function Home() {
     <ProjectCard
       title="Butterfly Population Analysis"
       description="A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS."
-      date="January 01, 2026"
-      readTime="10 min read"
-      image="/images/butterfly-analysis.jpg"
-      githubHref="https://github.com/plantmandev/species-distribution-model"
-      externalHref="https://plantman.dev/projects/sdm"
-    />
-    <ProjectCard
-      title="Butterfly Population Analysis"
-      description="A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS."
-      date="January 01, 2026"
-      readTime="10 min read"
-      image="/images/butterfly-analysis.jpg"
-      githubHref="https://github.com/plantmandev/species-distribution-model"
-      externalHref="https://plantman.dev/projects/sdm"
-    />
-    <ProjectCard
-      title="Butterfly Population Analysis"
-      description="A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS."
-      date="January 01, 2026"
+      date="January 16, 2026"
       readTime="10 min read"
       image="/images/butterfly-analysis.jpg"
       githubHref="https://github.com/plantmandev/species-distribution-model"

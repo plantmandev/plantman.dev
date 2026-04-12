@@ -66,26 +66,6 @@ const CARDS: CardData[] = [
     externalHref: "/projects/species-distribution-model",
     tags: ["GIS", "PostGIS", "GBIF", "deck.gl", "scikit-learn"],
   },
-  {
-    title: "Butterfly Population Analysis",
-    description: "A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS.",
-    date: "January 01, 2026",
-    readTime: "10 min read",
-    image: "/images/butterfly-analysis.jpg",
-    githubHref: "https://github.com/plantmandev/species-distribution-model",
-    externalHref: "#",
-    tags: ["R", "GBIF", "iNaturalist", "ggplot2"],
-  },
-  {
-    title: "Butterfly Population Analysis",
-    description: "A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS.",
-    date: "January 01, 2026",
-    readTime: "10 min read",
-    image: "/images/butterfly-analysis.jpg",
-    githubHref: "https://github.com/plantmandev/species-distribution-model",
-    externalHref: "#",
-    tags: ["Python", "scikit-learn", "Machine Learning"],
-  },
 ];
 
 export default function Projects() {
