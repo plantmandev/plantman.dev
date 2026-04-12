@@ -20,9 +20,6 @@ export default function NotFound() {
 
   return (
     <div style={styles.root}>
-      {/* Scanline overlay */}
-      <div style={styles.scanlines} />
-
       <div style={{ ...styles.content, opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(12px)", transition: "opacity 0.5s ease, transform 0.5s ease" }}>
 
         {/* 404 */}
@@ -46,12 +43,6 @@ export default function NotFound() {
         <p style={styles.sub}>
           The resource you requested does not exist or has been moved.
         </p>
-
-        {/* Terminal-style path */}
-        <div style={styles.terminal}>
-          <span style={styles.prompt}>~/plantman.dev</span>
-          <span style={styles.cursor}>▋</span>
-        </div>
 
         {/* Actions */}
         <div style={styles.actions}>
@@ -77,13 +68,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent:  "center",
     backgroundColor: "var(--background)",
     overflow:        "hidden",
-  },
-  scanlines: {
-    position:         "absolute",
-    inset:            0,
-    backgroundImage:  "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.015) 2px, rgba(255,255,255,0.015) 4px)",
-    pointerEvents:    "none",
-    zIndex:           0,
   },
   content: {
     position:   "relative",
@@ -163,24 +147,6 @@ const styles: Record<string, React.CSSProperties> = {
     maxWidth:   "320px",
     lineHeight: 1.6,
     fontFamily: "Consolas, Monaco, 'Courier New', monospace",
-  },
-  terminal: {
-    display:         "flex",
-    alignItems:      "center",
-    gap:             "0.4rem",
-    padding:         "0.5rem 1rem",
-    border:          "1px solid var(--border)",
-    backgroundColor: "var(--card-bg)",
-    fontFamily:      "Consolas, Monaco, 'Courier New', monospace",
-  },
-  prompt: {
-    fontSize:  "0.75rem",
-    color:     "var(--muted)",
-  },
-  cursor: {
-    fontSize:  "0.75rem",
-    color:     "var(--foreground)",
-    animation: "blink 1s step-start infinite",
   },
   actions: {
     display:   "flex",

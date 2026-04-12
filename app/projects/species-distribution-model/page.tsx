@@ -100,13 +100,14 @@ function getSpeciesImage(scientificName: string): string {
   return `/species/${slug}.svg`;
 }
 
-function SpeciesCard({ sp, isSelected, onClick }: any) {
-  return (
+function SpeciesCard({ sp, isSelected, onClick, isTutorialTarget, showTip }: any) {
+  const btn = (
     <button
       onClick={sp.disabled ? undefined : onClick}
-      className={`sdm-card${isSelected ? " selected" : ""}${sp.disabled ? " disabled" : ""}`}
+      className={`sdm-card${isSelected ? " selected" : ""}${sp.disabled ? " disabled" : ""}${isTutorialTarget ? " sdm-tutorial-target" : ""}`}
       disabled={sp.disabled}
       title={sp.disabled ? "Temporarily unavailable" : undefined}
+      style={showTip ? { width: "100%" } : undefined}
     >
       <div className="sdm-card-image">
         <img
@@ -137,6 +138,14 @@ function SpeciesCard({ sp, isSelected, onClick }: any) {
       </div>
     </button>
   );
+
+  if (!showTip) return btn;
+  return (
+    <div style={{ position: "relative" }}>
+      {btn}
+      <div className="sdm-tutorial-tip">select a species</div>
+    </div>
+  );
 }
 
 function SelectorSection({
@@ -146,6 +155,7 @@ function SelectorSection({
   onSelect,
   visibleCount,
   onLoadMore,
+  tutorialCardIndex,
 }: {
   title: string;
   items: Species[];
@@ -153,9 +163,22 @@ function SelectorSection({
   onSelect: (sp: Species) => void;
   visibleCount: number;
   onLoadMore: () => void;
+  tutorialCardIndex?: number | null;
 }) {
   const visible = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
+  const loadMoreRef = React.useRef<HTMLButtonElement>(null);
+
+  React.useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) onLoadMore(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, onLoadMore]);
   return (
     <div className="sdm-section">
       <div className="sdm-section-title">{title}</div>
@@ -164,17 +187,19 @@ function SelectorSection({
       ) : (
         <>
           <div className="sdm-card-grid">
-            {visible.map((sp) => (
+            {visible.map((sp, index) => (
               <SpeciesCard
                 key={sp.fileName}
                 sp={sp}
                 isSelected={sp.fileName === selectedFileName}
                 onClick={() => onSelect(sp)}
+                isTutorialTarget={tutorialCardIndex != null && index === tutorialCardIndex}
+                showTip={tutorialCardIndex != null && index === tutorialCardIndex}
               />
             ))}
           </div>
           {hasMore && (
-            <button className="sdm-load-more" onClick={onLoadMore} aria-label={`Load ${items.length - visibleCount} more`}>
+            <button ref={loadMoreRef} className="sdm-load-more" onClick={onLoadMore} aria-label={`Load ${items.length - visibleCount} more`}>
               <SpriteLoader />
             </button>
           )}
@@ -202,12 +227,16 @@ export default function SDMPage() {
   const [loading, setLoading]                 = useState(true);
   const [error, setError]                     = useState<string | null>(null);
   const [showStepMenu, setShowStepMenu]       = useState(false);
+  const [dropdownAnchor, setDropdownAnchor]   = useState<{ top: number; right: number } | null>(null);
   const [selectedStep, setSelectedStep]       = useState(STEP_OPTIONS[2] ?? STEP_OPTIONS[0]);
   const [viewState, setViewState]             = useState<any>(INITIAL_VIEW);
   const [visibleCount, setVisibleCount]       = useState(PAGE_SIZE);
   const fittedSpeciesRef                      = React.useRef<string | null>(null);
+  const tutorialInitializedRef                = React.useRef(false);
+  const intervalArrowRef                      = React.useRef<HTMLButtonElement>(null);
 
-  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
+  const [tutorialStep, setTutorialStep]         = useState<number | null>(null);
+  const [tutorialCardIndex, setTutorialCardIndex] = useState<number>(0);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -217,9 +246,15 @@ export default function SDMPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (species.length === 0 || loading) return;
+    if (tutorialInitializedRef.current) return;
+    tutorialInitializedRef.current = true;
     const done = localStorage.getItem(TUTORIAL_KEY);
-    if (!done) setTutorialStep(1);
-  }, []);
+    if (!done) {
+      setTutorialCardIndex(Math.floor(Math.random() * 6));
+      setTutorialStep(1);
+    }
+  }, [species, loading]);
 
   // ── Tutorial helpers ─────────────────────────────────────────────────────
   const advanceTutorial = useCallback((fromStep: number) => {
@@ -481,12 +516,10 @@ export default function SDMPage() {
             <>
               <p className="sdm-common-name">{selectedSpecies.commonName}</p>
               <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
-              {selectedSpecies.disabled ? (
+              {selectedSpecies.disabled && (
                 <p className="sdm-description">
                   This species is temporarily unavailable.
                 </p>
-              ) : (
-                <p className="sdm-description">Species description will be loaded from the database.</p>
               )}
             </>
           ) : (
@@ -535,8 +568,17 @@ export default function SDMPage() {
               </div>
               <div style={{ position: "relative" }}>
                 <button
+                  ref={intervalArrowRef}
                   onClick={() => {
-                    setShowStepMenu(!showStepMenu);
+                    const next = !showStepMenu;
+                    if (next && intervalArrowRef.current) {
+                      const rect = intervalArrowRef.current.getBoundingClientRect();
+                      setDropdownAnchor({
+                        top:   rect.bottom + 4,
+                        right: window.innerWidth - rect.right,
+                      });
+                    }
+                    setShowStepMenu(next);
                     advanceTutorial(2);
                   }}
                   className={`sdm-interval-arrow${tutorialStep === 2 ? " sdm-tutorial-target" : ""}`}
@@ -547,23 +589,6 @@ export default function SDMPage() {
                   <div className="sdm-tutorial-tip">choose an interval</div>
                 )}
               </div>
-              {showStepMenu && (
-                <div className="sdm-dropdown">
-                  {STEP_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => {
-                        setSelectedStep(opt);
-                        setShowStepMenu(false);
-                        advanceTutorial(2);
-                      }}
-                      className={`sdm-dropdown-item${opt.label === safeStep.label ? " active" : ""}`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 
@@ -602,14 +627,7 @@ export default function SDMPage() {
         </div>
 
         {/* Species selector — tutorial step 1 */}
-        <div
-          className={`sdm-block sdm-selector${tutorialStep === 1 ? " sdm-tutorial-target" : ""}`}
-        >
-          {tutorialStep === 1 && (
-            <div className="sdm-tutorial-tip sdm-tutorial-tip--inset">
-              select a species
-            </div>
-          )}
+        <div className="sdm-block sdm-selector">
           <SelectorSection
             title="Butterflies"
             items={butterflies}
@@ -617,7 +635,7 @@ export default function SDMPage() {
             onSelect={handleSelectSpecies}
             visibleCount={visibleCount}
             onLoadMore={handleLoadMore}
-
+            tutorialCardIndex={tutorialStep === 1 ? tutorialCardIndex : null}
           />
           {nectarPlants.length > 0 && (
             <SelectorSection
@@ -627,7 +645,6 @@ export default function SDMPage() {
               onSelect={handleSelectSpecies}
               visibleCount={visibleCount}
               onLoadMore={handleLoadMore}
-  
             />
           )}
           {hostPlants.length > 0 && (
@@ -638,10 +655,10 @@ export default function SDMPage() {
               onSelect={handleSelectSpecies}
               visibleCount={visibleCount}
               onLoadMore={handleLoadMore}
-  
             />
           )}
         </div>
+
       </div>
 
       {/* ── Map ──────────────────────────────────────────────────────────── */}
@@ -668,6 +685,27 @@ export default function SDMPage() {
           </div>
         )}
       </div>
+
+      {showStepMenu && dropdownAnchor && (
+        <div
+          className="sdm-dropdown"
+          style={{ position: "fixed", top: dropdownAnchor.top, right: dropdownAnchor.right, bottom: "auto", left: "auto" }}
+        >
+          {STEP_OPTIONS.map((opt) => (
+            <button
+              key={opt.label}
+              onClick={() => {
+                setSelectedStep(opt);
+                setShowStepMenu(false);
+                advanceTutorial(2);
+              }}
+              className={`sdm-dropdown-item${opt.label === safeStep.label ? " active" : ""}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <div className="sdm-error">{error}</div>}
       <SupportBar />
