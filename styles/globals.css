@@ -1225,9 +1225,13 @@ html.light .navbar-logo img {
 .sb-btn--flash:hover  { background: #444; border-color: #1a7fd4; }
 .sb-btn--coffee       { background: #FFDD00; border-color: #FFDD00; color: #0D0D0D; }
 .sb-btn--coffee:hover { background: #FFE93A; border-color: #FFE93A; }
+.sb-btn--terrain        { background: #3a3a3a; border-color: #555; color: #F2F2F2; }
+.sb-btn--terrain:hover  { background: #444; border-color: #4caf7d; }
+.sb-btn--terrain.active { background: #1e3a2a; border-color: #4caf7d; color: #4caf7d; }
 
 .sb-logo         { height: 22px; width: auto; max-width: 80px; object-fit: contain; flex-shrink: 0; display: block; }
 .sb-logo--coffee { height: 26px; max-width: 90px; }
+.sb-icon         { height: 20px; width: 20px; display: block; }
 
 /* Hover tooltip */
 .sb-btn::after {

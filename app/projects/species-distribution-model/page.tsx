@@ -30,6 +30,19 @@ const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.d
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const INITIAL_VIEW  = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
+const SATELLITE_STYLE = {
+  version: 8 as const,
+  sources: {
+    satellite: {
+      type: "raster" as const,
+      tiles: ["https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg"],
+      tileSize: 256,
+      maxzoom: 8,
+      attribution: "Imagery courtesy NASA Earth Observatory",
+    },
+  },
+  layers: [{ id: "satellite", type: "raster" as const, source: "satellite" }],
+};
 const TUTORIAL_KEY  = "sdm-tutorial-done";
 const PAGE_SIZE     = 30;
 const COLOR_PALETTE: [number, number, number][] = [
@@ -212,9 +225,12 @@ function SelectorSection({
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function SDMPage() {
   const { resolvedTheme } = useTheme();
-  const mapStyle = resolvedTheme === "light"
-    ? "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
-    : "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
+  const [terrainMode, setTerrainMode] = useState(false);
+  const mapStyle = terrainMode
+    ? SATELLITE_STYLE
+    : resolvedTheme === "light"
+      ? "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
+      : "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 
   const [mounted, setMounted]                 = useState(false);
   const [canvasReady, setCanvasReady]         = useState(false);
@@ -672,7 +688,7 @@ export default function SDMPage() {
           useDevicePixels={1}
           onError={(error: Error) => console.warn("DeckGL:", error.message)}
         >
-          <Map mapStyle={mapStyle} />
+          <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle} />
         </DeckGL>
         {loading && !selectedSpecies?.disabled && (
           <div className="sdm-map-loading">
@@ -708,7 +724,7 @@ export default function SDMPage() {
       )}
 
       {error && <div className="sdm-error">{error}</div>}
-      <SupportBar />
+      <SupportBar terrainEnabled={terrainMode} onTerrainToggle={() => setTerrainMode(m => !m)} />
     </div>
   );
 }
