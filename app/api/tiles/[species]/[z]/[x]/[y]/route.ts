@@ -20,9 +20,9 @@ export async function GET(
   try {
     const { species, z, x, y } = await params;
     const speciesName = decodeURIComponent(species);
-    const zoom = parseInt(z);
-    const tileX = parseInt(x);
-    const tileY = parseInt(y);
+    const zoom = parseInt(z, 10);
+    const tileX = parseInt(x, 10);
+    const tileY = parseInt(y, 10);
 
     if (isNaN(zoom) || isNaN(tileX) || isNaN(tileY)) {
       return NextResponse.json({ error: 'Invalid tile coordinates' }, { status: 400 });

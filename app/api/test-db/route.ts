@@ -10,10 +10,10 @@ export async function GET() {
       speciesCount: result[0].species_count,
       database: process.env.DATABASE_HOST,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       connected: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       database: process.env.DATABASE_HOST,
     }, { status: 500 });
   }

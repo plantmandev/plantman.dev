@@ -102,8 +102,8 @@ export default function Certificates() {
         </div>
 
         {visibleCerts.length > 0 ? (
-          visibleCerts.map((cert, i) => (
-            <CertCard key={i} {...cert} />
+          visibleCerts.map((cert) => (
+            <CertCard key={cert.title} {...cert} />
           ))
         ) : (
           <p className="projects-empty">No certificates in this category yet.</p>

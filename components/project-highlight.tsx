@@ -202,6 +202,8 @@ export default function ProjectHighlight({
           {project.githubHref && (
             <a
               href={project.githubHref}
+              target="_blank"
+              rel="noopener noreferrer"
               className="ph-btn ph-btn--icon"
               aria-label="GitHub repository"
             >

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { ScatterplotLayer } from "@deck.gl/layers";
@@ -66,6 +66,11 @@ function getDefaultStep(obs: number) {
 }
 
 // ── Types ────────────────────────────────────────────────────────────────────
+type OccurrencePoint = {
+  position: [number, number];
+  timestamp: number;
+};
+
 type Species = {
   scientificName: string;
   fileName: string;
@@ -234,7 +239,7 @@ export default function SDMPage() {
 
   const [mounted, setMounted]                 = useState(false);
   const [canvasReady, setCanvasReady]         = useState(false);
-  const [data, setData]                       = useState<any[]>([]);
+  const [data, setData]                       = useState<OccurrencePoint[]>([]);
   const [timeRange, setTimeRange]             = useState<[number, number]>([0, 1]);
   const [currentTime, setCurrentTime]         = useState(0);
   const [isPlaying, setIsPlaying]             = useState(false);
@@ -267,7 +272,8 @@ export default function SDMPage() {
     tutorialInitializedRef.current = true;
     const done = localStorage.getItem(TUTORIAL_KEY);
     if (!done) {
-      setTutorialCardIndex(Math.floor(Math.random() * 6));
+      const butterfliesForTutorial = species.filter(s => !s.category || s.category === "lepidoptera");
+      setTutorialCardIndex(Math.floor(Math.random() * Math.min(butterfliesForTutorial.length, 6)));
       setTutorialStep(1);
     }
   }, [species, loading]);
@@ -312,13 +318,13 @@ export default function SDMPage() {
         if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
         const parsed: Species[] = json.map((item: any, index: number) => {
           const colorRGB = hexToRgb(item.color ?? "") ?? COLOR_PALETTE[index % COLOR_PALETTE.length];
-          const actualObs = item.actual_obs ? Math.round(parseFloat(item.actual_obs)) : undefined;
+          const obsRaw = parseFloat(item.actual_obs);
           return {
             scientificName: item.species_name,
             commonName:     item.common_name || item.species_name,
             fileName:       toFileName(item.species_name),
             color:          colorRGB,
-            actualObs:      actualObs && !isNaN(actualObs) ? actualObs : undefined,
+            actualObs:      Number.isFinite(obsRaw) ? Math.round(obsRaw) : undefined,
             status:         item.status ?? "",
             category:       item.category ?? "lepidoptera",
             disabled:       item.disabled ?? false,
@@ -358,7 +364,7 @@ export default function SDMPage() {
       setIsPlaying(false);
 
       let offset = 0;
-      let allPoints: any[] = [];
+      const allPoints: OccurrencePoint[] = [];
 
       try {
         while (true) {
@@ -371,37 +377,42 @@ export default function SDMPage() {
           const geojson = await res.json();
           if (!Array.isArray(geojson.features)) throw new Error("Invalid GeoJSON");
 
-          const newPoints = geojson.features.map((f: any) => {
+          const newPoints: OccurrencePoint[] = geojson.features.flatMap((f: any) => {
             try {
-              return {
-                position:  f.geometry.coordinates,
-                timestamp: new Date(f.properties.eventDate).getTime(),
-              };
-            } catch { return null; }
-          }).filter((p: any) => p && !isNaN(p.timestamp) && p.timestamp > 0);
+              const coords = f.geometry?.coordinates;
+              if (!Array.isArray(coords) || coords.length < 2) return [];
+              const [lng, lat] = coords;
+              if (typeof lng !== "number" || typeof lat !== "number" || isNaN(lng) || isNaN(lat)) return [];
+              const timestamp = new Date(f.properties?.eventDate).getTime();
+              if (isNaN(timestamp) || timestamp <= 0) return [];
+              return [{ position: [lng, lat] as [number, number], timestamp }];
+            } catch { return []; }
+          });
 
-          allPoints = [...allPoints, ...newPoints];
+          for (let i = 0; i < newPoints.length; i++) allPoints.push(newPoints[i]);
           if (cancelled) return;
 
-          const ts = allPoints.map((p: any) => p.timestamp);
+          const ts = allPoints.map((p) => p.timestamp);
           if (ts.length === 0 && !geojson.hasMore) throw new Error("No valid timestamps");
 
           if (ts.length > 0) {
-            const min = ts.reduce((a: number, b: number) => a < b ? a : b);
-            const max = ts.reduce((a: number, b: number) => a > b ? a : b);
-            setData([...allPoints]);
+            const min = ts.reduce((a, b) => a < b ? a : b);
+            const max = ts.reduce((a, b) => a > b ? a : b);
+            setData(allPoints.slice());
             setTimeRange([min, max]);
 
             if (offset === 0) {
               // First chunk: initialise time position and fit viewport
               setCurrentTime(min);
               if (fittedSpeciesRef.current !== selectedSpecies.scientificName) {
-                const lngs = allPoints.map((p: any) => p.position[0]);
-                const lats = allPoints.map((p: any) => p.position[1]);
-                const minLng = lngs.reduce((a: number, b: number) => a < b ? a : b);
-                const maxLng = lngs.reduce((a: number, b: number) => a > b ? a : b);
-                const minLat = lats.reduce((a: number, b: number) => a < b ? a : b);
-                const maxLat = lats.reduce((a: number, b: number) => a > b ? a : b);
+                let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+                for (const p of allPoints) {
+                  const [lng, lat] = p.position;
+                  if (lng < minLng) minLng = lng;
+                  if (lng > maxLng) maxLng = lng;
+                  if (lat < minLat) minLat = lat;
+                  if (lat > maxLat) maxLat = lat;
+                }
                 try {
                   const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
                   const { longitude, latitude, zoom } = vp.fitBounds(
@@ -458,15 +469,7 @@ export default function SDMPage() {
     advanceTutorial(1);
   }, [advanceTutorial]);
 
-  if (!mounted || !canvasReady) {
-    return (
-      <div className="sdm-loading">
-        <span className="sdm-loading-text">Initializing canvas…</span>
-      </div>
-    );
-  }
-
-  // ── Derived values ────────────────────────────────────────────────────────
+  // ── Derived values (must be above early return — Rules of Hooks) ──────────
   const safeStep = selectedStep ?? STEP_OPTIONS[2];
 
   const timeWindowMs =
@@ -474,7 +477,7 @@ export default function SDMPage() {
       ? timeRange[1] - timeRange[0]
       : safeStep.days * 24 * 60 * 60 * 1000;
 
-  const layers = [
+  const layers = useMemo(() => [
     new ScatterplotLayer({
       id:             "occurrences",
       data,
@@ -492,7 +495,22 @@ export default function SDMPage() {
       opacity:         0.75,
       pickable:        false,
     }),
-  ];
+  ], [data, currentTime, timeWindowMs, timeRange, safeStep.days, selectedSpecies?.color]);
+
+  const yearStatuses = useMemo(() => {
+    const yearsWithData = new Set(data.map((d) => new Date(d.timestamp).getFullYear()));
+    const statuses: Record<number, "complete" | "ingested" | "missing" | "partial"> = {};
+    YEARS.forEach((y) => { statuses[y] = yearsWithData.has(y) ? "ingested" : "missing"; });
+    return statuses;
+  }, [data]);
+
+  if (!mounted || !canvasReady) {
+    return (
+      <div className="sdm-loading">
+        <span className="sdm-loading-text">Initializing canvas…</span>
+      </div>
+    );
+  }
 
   const currentDate = new Date(currentTime).toLocaleDateString("en-US", {
     month: "numeric", day: "numeric", year: "numeric",
@@ -502,13 +520,6 @@ export default function SDMPage() {
     timeRange[1] > timeRange[0]
       ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
       : 0;
-
-  const yearStatuses: Record<number, "complete" | "ingested" | "missing" | "partial"> = {};
-  YEARS.forEach((y) => {
-    yearStatuses[y] = data.some((d: any) => new Date(d.timestamp).getFullYear() === y)
-      ? "ingested"
-      : "missing";
-  });
 
   const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
   const nectarPlants = species.filter((s) => s.category === "nectar_plant");

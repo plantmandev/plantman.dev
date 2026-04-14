@@ -67,7 +67,7 @@ export default function ProjectCard({
             <a
               href={githubHref}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="project-card-btn project-card-btn--icon"
               aria-label="GitHub repository"
             >
@@ -78,7 +78,7 @@ export default function ProjectCard({
             <a
               href={externalHref}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="project-card-btn project-card-btn--icon"
               aria-label="External link"
             >

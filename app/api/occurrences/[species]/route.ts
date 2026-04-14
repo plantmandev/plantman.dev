@@ -49,7 +49,8 @@ export async function GET(
       });
     }
 
-    const offset = Math.max(0, parseInt(url.searchParams.get('offset') ?? '0') || 0);
+    const offsetParam = url.searchParams.get('offset');
+    const offset = offsetParam ? Math.max(0, parseInt(offsetParam, 10) || 0) : 0;
 
     const rows = await query<PointRow>(
       `SELECT

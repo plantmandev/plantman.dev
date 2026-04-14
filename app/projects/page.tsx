@@ -97,9 +97,9 @@ export default function Projects() {
           </div>
 
           {visibleCards.length > 0 ? (
-            visibleCards.map((card, i) => (
+            visibleCards.map((card) => (
               <ProjectCard
-                key={i}
+                key={card.title}
                 title={card.title}
                 description={card.description}
                 date={card.date}
