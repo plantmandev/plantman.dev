@@ -3,29 +3,33 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 
 import AppearanceSwitch from "./appearance-switch";
 
-export const SiteLogo = () => {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  const src = mounted && resolvedTheme
-    ? resolvedTheme === "light"
-      ? "/logos/plantman Logo (Light Mode).svg"
-      : "/logos/plantman Logo (Dark Mode).svg"
-    : "/logos/plantman Logo (Dark Mode).svg";
-
-  return (
-    <Image alt="Plantman Logo" height={32} priority src={src} width={32} />
-  );
-};
+export const SiteLogo = () => (
+  <>
+    <Image
+      alt="Plantman Logo"
+      className="logo-dark"
+      height={32}
+      priority
+      src="/logos/plantman Logo (Dark Mode).svg"
+      width={32}
+    />
+    <Image
+      alt=""
+      aria-hidden
+      className="logo-light"
+      height={32}
+      priority
+      src="/logos/plantman Logo (Light Mode).svg"
+      width={32}
+    />
+  </>
+);
 
 const navItems = [
   { label: "Projects",     href: "/projects"     },

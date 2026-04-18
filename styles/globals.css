@@ -37,32 +37,34 @@
   --dot-bg:         #3a3a3a;
   --dot-border:     #555555;
   --progress-track: rgba(255,255,255,0.08);
+  --overlay-bg:     rgba(13,13,13,0.7);
 }
 
 .light {
-  --near-black: #D4DADC;      /* navbar / heavy-surface bg */
-  --dark-gray:  #C5CCCE;      /* slightly deeper surface */
-  --light-gray: #67696A;      /* muted text */
-  --off-white:  #1C2021;      /* body text */
-  --background: #FAFAF8;      /* page background */
-  --foreground: #1C2021;
-  --muted:      #67696A;
-  --border:     #C8CFD1;
-  --btn-bg:         #E9ECEE;
-  --btn-border:     #BEC7C9;
-  --btn-bg-hover:   #DCE1E3;
-  --btn-border-hover: #A6B2B5;
-  --card-bg:        #F1F4F5;
-  --card-border:    #CFD6D8;
-  --img-bg:         #E3E9EA;
-  --social-bg:      #E7ECEE;
-  --panel-bg:       rgba(212,218,220,0.98);
-  --sdm-card-bg:    rgba(241,244,245,0.92);
-  --tag-bg:         #ECF0F1;
-  --tag-border:     #C8CFD1;
-  --dot-bg:         #C5CCCE;
-  --dot-border:     #A6B2B5;
+  --near-black: #EDE3D0;      /* navbar / heavy-surface bg */
+  --dark-gray:  #D8D0C5;      /* slightly deeper surface */
+  --light-gray: #9C7055;      /* dim text — dates, tags, icons */
+  --off-white:  #2C1503;      /* body text */
+  --background: #EDE3D0;      /* page background — warm parchment */
+  --foreground: #2C1503;      /* primary text — deep espresso */
+  --muted:      #7A4F35;      /* secondary text — warm caramel */
+  --border:     #C9C0B2;
+  --btn-bg:         #E3DAC9;
+  --btn-border:     #BEB3A3;
+  --btn-bg-hover:   #D8CEBC;
+  --btn-border-hover: #A89E8E;
+  --card-bg:        #E8DFD0;
+  --card-border:    #C9C0B2;
+  --img-bg:         #DDD4C3;
+  --social-bg:      #E0D7C8;
+  --panel-bg:       rgba(237,227,208,0.98);
+  --sdm-card-bg:    rgba(232,223,208,0.92);
+  --tag-bg:         #E5DCCC;
+  --tag-border:     #C4BAA8;
+  --dot-bg:         #C9C0B2;
+  --dot-border:     #A89E8E;
   --progress-track: rgba(0,0,0,0.09);
+  --overlay-bg:     rgba(237,227,208,0.7);
 }
 
 /* ==========================================================================
@@ -157,7 +159,7 @@ button:focus-visible {
 }
 
 .navbar-inner {
-  max-width: 45%;
+  max-width: min(45%, 1000px);
   margin: 0 auto;
   height: 100%;
   display: flex;
@@ -165,14 +167,12 @@ button:focus-visible {
   justify-content: space-between;
 }
 
-.navbar-logo img {
-  filter: none;
-  transition: filter 0.2s ease;
-}
+/* Show the correct logo based on theme class set by next-themes — no JS flash */
+.logo-dark  { display: block; }
+.logo-light { display: none;  }
 
-html.light .navbar-logo img {
-  filter: invert(1);
-}
+html.light .logo-dark  { display: none;  }
+html.light .logo-light { display: block; }
 
 .navbar-logo {
   display: flex;
@@ -300,7 +300,7 @@ html.light .navbar-logo img {
 }
 
 .footer-content {
-  max-width: 45%;
+  max-width: min(45%, 1000px);
   margin: 0 auto;
   width: 100%;
 }
@@ -335,7 +335,7 @@ html.light .navbar-logo img {
   grid-template-columns: 1fr 250px;
   gap: 2.5rem;
   align-items: center;
-  max-width: 45%;
+  max-width: min(45%, 1000px);
   margin: 0 auto;
   min-width: 0;
 }
@@ -414,7 +414,7 @@ html.light .navbar-logo img {
 }
 
 .projects-content {
-  max-width: 45%;
+  max-width: min(45%, 1000px);
   margin: 0 auto;
 }
 
@@ -554,7 +554,7 @@ html.light .navbar-logo img {
 .project-card-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -871,6 +871,7 @@ html.light .navbar-logo img {
   color: var(--foreground);
   line-height: 1.2;
   margin: 0;
+  margin-top: 6px;
 }
 
 .sdm-scientific-name {
@@ -1003,7 +1004,7 @@ html.light .navbar-logo img {
 .sdm-year-cell.complete,
 .sdm-year-cell.ingested { background: var(--light-gray); }
 .sdm-year-cell.partial  { background: #f59e0b; border-color: #f59e0b; }
-.sdm-year-cell.missing  { background: transparent; color: #c0392b; border-color: #555; }
+.sdm-year-cell.missing  { background: transparent; color: #c0392b; border-color: var(--border); }
 
 .sdm-category-row { display: none; }
 
@@ -1164,7 +1165,7 @@ html.light .navbar-logo img {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(13,13,13,0.55);
+  background: var(--overlay-bg);
   z-index: 5;
   pointer-events: none;
 }
@@ -1191,6 +1192,12 @@ html.light .navbar-logo img {
 }
 
 .sdm-loading-text { font-size: 13px; color: var(--muted); }
+
+/* Sepia tint on the MapLibre base canvas only — DeckGL canvas is a separate
+   sibling element and is unaffected, so occurrence dots keep their true colors. */
+html.light .maplibregl-canvas {
+  filter: sepia(0.45) brightness(0.96) saturate(0.85);
+}
 
 /* ==========================================================================
    SUPPORT BAR
@@ -1221,13 +1228,13 @@ html.light .navbar-logo img {
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
-.sb-btn--flash        { background: #3a3a3a; border-color: #555; color: #F2F2F2; }
-.sb-btn--flash:hover  { background: #444; border-color: #1a7fd4; }
+.sb-btn--flash        { background: var(--btn-bg); border-color: var(--btn-border); color: var(--foreground); }
+.sb-btn--flash:hover  { background: var(--btn-bg-hover); border-color: #1a7fd4; }
 .sb-btn--coffee       { background: #FFDD00; border-color: #FFDD00; color: #0D0D0D; }
 .sb-btn--coffee:hover { background: #FFE93A; border-color: #FFE93A; }
-.sb-btn--terrain        { background: #3a3a3a; border-color: #555; color: #F2F2F2; }
-.sb-btn--terrain:hover  { background: #444; border-color: #4caf7d; }
-.sb-btn--terrain.active { background: #1e3a2a; border-color: #4caf7d; color: #4caf7d; }
+.sb-btn--terrain        { background: var(--btn-bg); border-color: var(--btn-border); color: var(--foreground); }
+.sb-btn--terrain:hover  { background: var(--btn-bg-hover); border-color: #4caf7d; }
+.sb-btn--terrain.active { background: var(--btn-bg); border-color: #4caf7d; color: #4caf7d; }
 
 .sb-logo         { height: 22px; width: auto; max-width: 80px; object-fit: contain; flex-shrink: 0; display: block; }
 .sb-logo--coffee { height: 26px; max-width: 90px; }
@@ -1407,6 +1414,12 @@ html.light .navbar-logo img {
   .hero-content,
   .footer-content,
   .projects-content { max-width: 55%; }
+
+  .sdm-left { width: 400px; }
+}
+
+@media (max-width: 1280px) {
+  .sdm-left { width: 340px; }
 }
 
 @media (max-width: 1200px) {

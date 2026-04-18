@@ -28,6 +28,26 @@ function SpriteLoader({ size = 36 }: { size?: number }) {
 const DeckGL = dynamic(() => import("@deck.gl/react").then((mod) => mod.default), { ssr: false });
 const Map    = dynamic(() => import("react-map-gl/maplibre").then((mod) => mod.default), { ssr: false });
 
+// ── Fetch with retry ─────────────────────────────────────────────────────────
+// Retries on network errors and 5xx responses (transient server/cold-start issues).
+// Does NOT retry 4xx — those are caller errors and won't improve on retry.
+async function fetchWithRetry(url: string, maxAttempts = 3): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1))); // 500 ms, 1000 ms
+    }
+    try {
+      const res = await fetch(url);
+      if (res.status < 500) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr;
+}
+
 // ── Constants ────────────────────────────────────────────────────────────────
 const INITIAL_VIEW  = { longitude: 10, latitude: 20, zoom: 1.8, pitch: 0, bearing: 0 };
 const SATELLITE_STYLE = {
@@ -234,7 +254,7 @@ export default function SDMPage() {
   const mapStyle = terrainMode
     ? SATELLITE_STYLE
     : resolvedTheme === "light"
-      ? "https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json"
+      ? "https://basemaps.cartocdn.com/gl/voyager-nolabels-gl-style/style.json"
       : "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 
   const [mounted, setMounted]                 = useState(false);
@@ -312,7 +332,7 @@ export default function SDMPage() {
     if (!mounted || !canvasReady) return;
     const load = async () => {
       try {
-        const res = await fetch("/api/species");
+        const res = await fetchWithRetry("/api/species");
         if (!res.ok) throw new Error(`API failed (${res.status})`);
         const json = await res.json();
         if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
@@ -368,7 +388,7 @@ export default function SDMPage() {
 
       try {
         while (true) {
-          const res = await fetch(
+          const res = await fetchWithRetry(
             `/api/occurrences/${encodeURIComponent(selectedSpecies.scientificName)}?offset=${offset}`
           );
           if (cancelled) return;

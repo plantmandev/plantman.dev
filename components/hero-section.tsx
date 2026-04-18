@@ -61,8 +61,8 @@ export default function HeroSection() {
           <Image
             src="/profile.png"
             alt="Gabriel Guzman Blanco"
-            width={300}
-            height={360}
+            width={250}
+            height={250}
             className="profile-img"
             priority
           />
