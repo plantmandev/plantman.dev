@@ -2,8 +2,22 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSun, faMoon } from "@fortawesome/free-solid-svg-icons";
+
+const svgMask = (url: string): React.CSSProperties => ({
+  width: 20,
+  height: 20,
+  backgroundColor: "var(--foreground)",
+  WebkitMaskImage: `url(${url})`,
+  WebkitMaskSize: "contain",
+  WebkitMaskRepeat: "no-repeat",
+  WebkitMaskPosition: "center",
+  maskImage: `url(${url})`,
+  maskSize: "contain",
+  maskRepeat: "no-repeat",
+  maskPosition: "center",
+  transition: "background-color 0.2s ease",
+  flexShrink: 0,
+});
 
 export default function AppearanceSwitch() {
   const [mounted, setMounted] = useState(false);
@@ -17,7 +31,7 @@ export default function AppearanceSwitch() {
         aria-label="Toggle theme"
         style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
       >
-        <FontAwesomeIcon icon={faSun} style={{ width: 20, height: 20, color: "var(--light-gray)" }} />
+        <div style={svgMask("/logos/light-mode-button.svg")} />
       </button>
     );
   }
@@ -30,10 +44,7 @@ export default function AppearanceSwitch() {
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
     >
-      <FontAwesomeIcon
-        icon={isDark ? faSun : faMoon}
-        style={{ width: 20, height: 20, color: "var(--muted)", transition: "color 0.2s ease" }}
-      />
+      <div style={svgMask(isDark ? "/logos/light-mode-button.svg" : "/logos/dark-mode-button.svg")} />
     </button>
   );
 }

@@ -65,6 +65,9 @@ const SATELLITE_STYLE = {
 };
 const TUTORIAL_KEY  = "sdm-tutorial-done";
 const PAGE_SIZE     = 30;
+const DOT_COLOR_DARK:  [number, number, number] = [242, 242, 242]; // --off-white
+const DOT_COLOR_LIGHT: [number, number, number] = [122,  79,  53]; // --muted warm brown
+
 const COLOR_PALETTE: [number, number, number][] = [
   [255, 140, 0], [220, 20, 60], [255, 215, 0], [240, 240, 240],
   [75, 0, 130], [255, 105, 180], [50, 205, 50], [138, 43, 226],
@@ -284,6 +287,7 @@ export default function SDMPage() {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 800);
   }, []);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -508,14 +512,14 @@ export default function SDMPage() {
           ? [timeRange[0], currentTime]
           : [currentTime - timeWindowMs, currentTime],
       extensions:      [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor:    selectedSpecies?.color ?? [255, 255, 255],
+      getFillColor:    resolvedTheme === "light" ? DOT_COLOR_LIGHT : DOT_COLOR_DARK,
       getRadius:       3000,
       radiusMinPixels: 1.5,
       radiusMaxPixels: 4,
       opacity:         0.75,
       pickable:        false,
     }),
-  ], [data, currentTime, timeWindowMs, timeRange, safeStep.days, selectedSpecies?.color]);
+  ], [data, currentTime, timeWindowMs, timeRange, safeStep.days, resolvedTheme]);
 
   const yearStatuses = useMemo(() => {
     const yearsWithData = new Set(data.map((d) => new Date(d.timestamp).getFullYear()));
@@ -587,7 +591,7 @@ export default function SDMPage() {
                 className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
                 disabled={loading || selectedSpecies?.disabled}
               >
-                {loading ? "…" : isPlaying ? "||" : "▶"}
+                {loading ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
               </button>
               {tutorialStep === 3 && (
                 <div className="sdm-tutorial-tip">press play</div>

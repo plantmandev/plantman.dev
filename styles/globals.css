@@ -184,6 +184,9 @@ html.light .logo-light { display: block; }
 
 .navbar-logo:hover { opacity: 0.7; }
 
+.navbar-theme button { transition: opacity 0.2s ease; }
+.navbar-theme button:hover { opacity: 0.7; }
+
 /* Desktop nav links — centered via flex on the inner container */
 .navbar-links {
   display: flex;
@@ -1013,15 +1016,12 @@ html.light .logo-light { display: block; }
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--dark-gray) transparent;
+  scrollbar-width: none;
   min-height: 0;
   position: relative;
 }
 
-.sdm-selector::-webkit-scrollbar       { width: 4px; }
-.sdm-selector::-webkit-scrollbar-track { background: transparent; }
-.sdm-selector::-webkit-scrollbar-thumb { background: var(--dark-gray); }
+.sdm-selector::-webkit-scrollbar { display: none; }
 
 .sdm-section            { margin-bottom: 20px; }
 .sdm-section:last-child { margin-bottom: 0; }
@@ -1196,7 +1196,7 @@ html.light .logo-light { display: block; }
 /* Sepia tint on the MapLibre base canvas only — DeckGL canvas is a separate
    sibling element and is unaffected, so occurrence dots keep their true colors. */
 html.light .maplibregl-canvas {
-  filter: sepia(0.45) brightness(0.96) saturate(0.85);
+  filter: sepia(0.55) brightness(0.95) saturate(0.78);
 }
 
 /* ==========================================================================
