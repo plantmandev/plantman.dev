@@ -15,7 +15,7 @@ type FilterCategory = (typeof FILTER_CATEGORIES)[number];
 const CATEGORY_TAGS: Record<FilterCategory, string[]> = {
   "All Certificates": [],
   "GIS":              ["GIS", "Remote Pilot", "Geospatial"],
-  "Programming": ["SQL", "Python", "Data Analytics", "Algorithms"],
+  "Programming":      ["SQL", "Python", "Data Analytics", "Algorithms"],
   "EMT":              ["EMT", "Medical", "Trauma"],
 };
 
@@ -24,7 +24,7 @@ const CERTS: CertCardProps[] = [
     title:          "Sequence Query Language (SQL)",
     date:           "April, 2024",
     description:    "Foundations of relational database design, querying, and data extraction. Applied to real-world pipelines including spatial database workflows using MySQL and standard SQL environments.",
-    image:          "/logos/365datascience Logo.jpg",  
+    image:          "/logos/365datascience Logo.jpg",
     credentialHref: "https://learn.365datascience.com/certificates/CC-644CD72323/",
     category:       "SQL",
     published:      true,
@@ -38,10 +38,19 @@ const CERTS: CertCardProps[] = [
     category:       "Programming",
     published:      true,
   },
+    {
+    title:          "Adult and Pediatric First Aid/CPR/AED",
+    date:           "March, 2021",
+    description:    "American Red Cross certification covering recognition and response to cardiac and breathing emergencies in adults, children, and infants. Includes hands-on CPR technique, AED operation, and first aid for choking, bleeding, and sudden illness.",
+    image:          "/logos/American Red Cross Logo.png",
+    credentialHref: "#",
+    category:       "Medical",
+    published:      true,
+  },
   {
-    title:          "National Registry Emergency Medical Technician (NREMT)",
+    title:          "Emergency Medical Technician - Basic (EMT-B)",
     date:           "Work in Progress",
-    description:    "Full certification earned through U.S. Army 68W Combat Medic training. Covers emergency patient assessment, trauma care, airway management, and prehospital medical intervention.",
+    description:    "Entry-level prehospital care certification accredited by the National Registry of Emergency Medical Technicians (NREMT). Covers emergency patient assessment, trauma care, airway management, and prehospital medical intervention.",
     image:          "/logos/NREMT Logo.png",
     credentialHref: "#",
     category:       "EMT",
@@ -72,7 +81,7 @@ const CERTS: CertCardProps[] = [
     image:          "/logos/TCCC Logo.png",
     credentialHref: "#",
     category:       "Medical",
-    published:      true,
+    published:      false,
   },
 ];
 

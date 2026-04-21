@@ -75,7 +75,7 @@
   --ph-overlay:     rgba(192,174,130,0.08); /* image pane warm tint */
   /* component-specific surfaces */
   --hero-bg:           var(--card-bg);         /* hero band — matches card surface */
-  --butterfly-card-bg: rgba(192,174,142,0.95); /* butterfly cards — noticeably darker than card-bg */
+  --butterfly-card-bg: rgba(148,112,72,0.90); /* butterfly cards — warm dark brown */
 }
 
 /* ==========================================================================

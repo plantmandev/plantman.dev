@@ -49,21 +49,22 @@ interface CardData {
   description: string;
   date: string;
   readTime: string;
-  image: string;
-  githubHref: string;
-  externalHref: string;
+  image?: string;
+  githubHref?: string;
+  externalHref?: string;
+  postHref?: string;
   tags: string[];
 }
 
 const CARDS: CardData[] = [
   {
-    title: "Butterfly Population Analysis",
-    description: "A species distribution model built on 291k GBIF occurrence records across North America, visualized with deck.gl and PostGIS.",
-    date: "January 01, 2026",
+    title: "Species Distribution Model",
+    description: "Interactive visualization of butterfly occurrence data across North America, built with deck.gl and PostGIS. Temporal animation lets you scrub through observations from 2000–2024.",
+    date: "January 16, 2026",
     readTime: "10 min read",
-    image: "/images/butterfly-analysis.jpg",
+    image: "",
     githubHref: "https://github.com/plantmandev/species-distribution-model",
-    externalHref: "/projects/species-distribution-model",
+    postHref: "/projects/species-distribution-model",
     tags: ["GIS", "PostGIS", "GBIF", "deck.gl", "scikit-learn"],
   },
 ];
@@ -97,9 +98,9 @@ export default function Projects() {
           </div>
 
           {visibleCards.length > 0 ? (
-            visibleCards.map((card) => (
+            visibleCards.map((card, i) => (
               <ProjectCard
-                key={card.title}
+                key={i}
                 title={card.title}
                 description={card.description}
                 date={card.date}

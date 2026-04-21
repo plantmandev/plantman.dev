@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalendar, faClock, faNewspaper, faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { faCalendar, faClock, faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -59,8 +59,8 @@ export default function ProjectCard({
         <div className="project-card-actions">
           {postHref && (
             <Link href={postHref} className="project-card-btn project-card-btn--primary">
-              View Post
-              <FontAwesomeIcon icon={faNewspaper} />
+              Open
+              <FontAwesomeIcon icon={faArrowUpRightFromSquare} />
             </Link>
           )}
           {githubHref && (

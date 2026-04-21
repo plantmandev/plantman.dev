@@ -342,7 +342,7 @@ export default function SDMPage() {
         if (!Array.isArray(json) || json.length === 0) throw new Error("No data");
         const parsed: Species[] = json.map((item: any, index: number) => {
           const colorRGB = hexToRgb(item.color ?? "") ?? COLOR_PALETTE[index % COLOR_PALETTE.length];
-          const obsRaw = parseFloat(item.actual_obs);
+          const obsRaw = parseFloat(String(item.actual_obs).replace(/,/g, ""));
           return {
             scientificName: item.species_name,
             commonName:     item.common_name || item.species_name,
