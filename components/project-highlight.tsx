@@ -17,6 +17,7 @@ export type HighlightedProject = {
   date: string;
   readTime?: string;
   tags?: string[];
+  stats?: string[];      // short metric labels e.g. ["291k GBIF records", "2000–2024"]
   image?: string;        // static image path (fallback)
   video?: string;        // video path e.g. /thumbnails/species-distribution-model-thumbnail.mp4
   imageAlt?: string;
@@ -115,6 +116,7 @@ export default function ProjectHighlight({
   const project = projects[active];
 
   return (
+    <div className="ph-outer">
     <section className="ph-root">
 
       {/* ── Left: project media ───────────────────────────────────────────── */}
@@ -142,6 +144,8 @@ export default function ProjectHighlight({
             <span>[ no preview ]</span>
           </div>
         )}
+
+        <div className="ph-image-overlay" />
 
         {/* Progress bar */}
         <div className="ph-progress-track">
@@ -184,6 +188,14 @@ export default function ProjectHighlight({
         <h2 className="ph-title">{project.title}</h2>
         <p className="ph-description">{project.description}</p>
 
+        {project.stats && project.stats.length > 0 && (
+          <div className="ph-stats">
+            {project.stats.map((stat) => (
+              <span key={stat} className="ph-stat">{stat}</span>
+            ))}
+          </div>
+        )}
+
         {project.tags && project.tags.length > 0 && (
           <div className="ph-tags">
             {project.tags.map((tag) => (
@@ -214,5 +226,6 @@ export default function ProjectHighlight({
 
       </div>
     </section>
+    </div>
   );
 }

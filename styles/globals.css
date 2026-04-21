@@ -38,33 +38,44 @@
   --dot-border:     #555555;
   --progress-track: rgba(255,255,255,0.08);
   --overlay-bg:     rgba(13,13,13,0.7);
+  --ph-overlay:     rgba(42,42,42,0.08);    /* image pane warm tint */
+  /* component-specific surfaces */
+  --hero-bg:           #1A1A1A;              /* hero band — matches dark-gray in dark mode */
+  --butterfly-card-bg: rgba(36,36,36,0.85);  /* sdm species cards — slightly lifted in dark mode */
+  --sdm-panel-bg:      var(--panel-bg);       /* sdm left panel bg */
+  --sdm-panel-border:  var(--border);         /* sdm left panel dividers */
 }
 
 .light {
-  --near-black: #EDE3D0;      /* navbar / heavy-surface bg */
-  --dark-gray:  #D8D0C5;      /* slightly deeper surface */
-  --light-gray: #9C7055;      /* dim text — dates, tags, icons */
-  --off-white:  #2C1503;      /* body text */
-  --background: #EDE3D0;      /* page background — warm parchment */
-  --foreground: #2C1503;      /* primary text — deep espresso */
-  --muted:      #7A4F35;      /* secondary text — warm caramel */
-  --border:     #C9C0B2;
-  --btn-bg:         #E3DAC9;
-  --btn-border:     #BEB3A3;
-  --btn-bg-hover:   #D8CEBC;
-  --btn-border-hover: #A89E8E;
-  --card-bg:        #E8DFD0;
-  --card-border:    #C9C0B2;
-  --img-bg:         #DDD4C3;
-  --social-bg:      #E0D7C8;
-  --panel-bg:       rgba(237,227,208,0.98);
-  --sdm-card-bg:    rgba(232,223,208,0.92);
-  --tag-bg:         #E5DCCC;
-  --tag-border:     #C4BAA8;
-  --dot-bg:         #C9C0B2;
-  --dot-border:     #A89E8E;
-  --progress-track: rgba(0,0,0,0.09);
-  --overlay-bg:     rgba(237,227,208,0.7);
+  /* ── Vintage map / sepia palette — warm amber, no cool grays ── */
+  --near-black: #EDE3C0;      /* navbar / page bg — warm amber parchment */
+  --dark-gray:  #CBBA96;      /* secondary surface — warm khaki */
+  --light-gray: #9C7055;      /* dim text — dates, tags, icons (unchanged) */
+  --off-white:  #2C1503;      /* body text — deep espresso (unchanged) */
+  --background: #EDE3C0;      /* page background — amber parchment */
+  --foreground: #2C1503;      /* primary text (unchanged) */
+  --muted:      #7A4F35;      /* secondary text — warm caramel (unchanged) */
+  --border:     #BBA880;      /* warm amber border */
+  --btn-bg:         #E2D3A5;  /* amber button face */
+  --btn-border:     #BAA878;  /* warm tan border */
+  --btn-bg-hover:   #D7C894;
+  --btn-border-hover: #A89268;
+  --card-bg:        #E8D9B2;  /* amber card surface */
+  --card-border:    #C0AE82;
+  --img-bg:         #D4C190;  /* warm tan image bg */
+  --social-bg:      #DFCFA5;
+  --panel-bg:       rgba(237,227,192,0.98);
+  --sdm-card-bg:    rgba(220,206,174,0.92); /* sdm panel / left sidebar cards */
+  --tag-bg:         #E2D2A2;
+  --tag-border:     #BEA87A;
+  --dot-bg:         #C0AE88;
+  --dot-border:     #A89268;
+  --progress-track: rgba(0,0,0,0.10);
+  --overlay-bg:     rgba(237,227,192,0.7);
+  --ph-overlay:     rgba(192,174,130,0.08); /* image pane warm tint */
+  /* component-specific surfaces */
+  --hero-bg:           var(--card-bg);         /* hero band — matches card surface */
+  --butterfly-card-bg: rgba(192,174,142,0.95); /* butterfly cards — noticeably darker than card-bg */
 }
 
 /* ==========================================================================
@@ -90,7 +101,7 @@ body {
 main {
   position: fixed;
   top: var(--bar-height);
-  bottom: var(--bar-height);
+  bottom: 0;
   left: 0;
   right: 0;
   overflow-y: auto;
@@ -282,47 +293,6 @@ html.light .logo-light { display: block; }
 .mobile-dropdown-item:hover    { color: var(--muted); }
 .mobile-dropdown-item.active   { font-weight: 700; }
 
-/* ==========================================================================
-   FOOTER
-   ========================================================================== */
-
-.footer {
-  width: 100%;
-  height: var(--bar-height);
-  min-height: 52px;
-  max-height: 72px;
-  border-top: 1px solid var(--border);
-  background-color: var(--background);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-}
-
-.footer-content {
-  max-width: min(45%, 1000px);
-  margin: 0 auto;
-  width: 100%;
-}
-
-.footer-text {
-  font-size: 0.75rem;
-  color: var(--foreground);
-  text-align: center;
-  font-weight: 400;
-  margin: 0;
-}
-
-.footer-link {
-  color: var(--foreground);
-  text-decoration: underline;
-  transition: color 0.2s ease;
-}
-
-.footer-link:hover { color: var(--muted); }
 
 /* ==========================================================================
    HERO
@@ -330,7 +300,7 @@ html.light .logo-light { display: block; }
 
 .hero-section {
   padding: 5rem 0;
-  background-color: var(--dark-gray);
+  background-color: var(--hero-bg);
 }
 
 .hero-content {
@@ -667,21 +637,26 @@ html.light .logo-light { display: block; }
    PROJECT HIGHLIGHT (featured carousel)
    ========================================================================== */
 
+.ph-outer {
+  padding: 2rem 0;
+}
+
 .ph-root {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 340px;
   background-color: var(--card-bg);
-  border-bottom: 1px solid var(--card-border);
+  border: 1px solid var(--card-border);
   overflow: hidden;
-  margin: 0;
-  padding: 0;
+  max-width: min(45%, 1000px);
+  margin: 0 auto;
 }
 
 .ph-image-pane {
   position: relative;
   overflow: hidden;
   background: var(--img-bg);
+  border-right: 1px solid var(--card-border);
 }
 
 .ph-image {
@@ -705,6 +680,14 @@ html.light .logo-light { display: block; }
   background: var(--img-bg);
 }
 
+.ph-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--ph-overlay);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .ph-progress-track {
   position: absolute;
   bottom: 0;
@@ -712,6 +695,7 @@ html.light .logo-light { display: block; }
   right: 0;
   height: 3px;
   background: var(--progress-track);
+  z-index: 2;
 }
 
 .ph-progress-fill {
@@ -783,8 +767,16 @@ html.light .logo-light { display: block; }
   color: var(--light-gray);
   line-height: 1.7;
   margin: 0;
-  flex: 1;
 }
+
+.ph-stats { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
+
+.ph-stat {
+  font-size: 0.74rem;
+  color: var(--light-gray);
+}
+
+.ph-stat::before { content: "— "; color: var(--muted); }
 
 .ph-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
@@ -856,13 +848,13 @@ html.light .logo-light { display: block; }
   display: flex;
   flex-direction: column;
   z-index: 10;
-  border-right: 1px solid var(--border);
-  background: var(--panel-bg);
+  border-right: 1px solid var(--sdm-panel-border);
+  background: var(--sdm-panel-bg);
 }
 
 .sdm-block {
-  background: var(--panel-bg);
-  border-bottom: 1px solid var(--border);
+  background: var(--sdm-panel-bg);
+  border-bottom: 1px solid var(--sdm-panel-border);
   flex-shrink: 0;
 }
 
@@ -1060,7 +1052,7 @@ html.light .logo-light { display: block; }
 }
 
 .sdm-card {
-  background: var(--sdm-card-bg);
+  background: var(--butterfly-card-bg);
   border: 1px solid var(--border);
   padding: 0;
   text-align: left;
@@ -1073,7 +1065,7 @@ html.light .logo-light { display: block; }
 }
 
 .sdm-card:hover                   { border-color: var(--muted); }
-.sdm-card.selected                { background: var(--btn-bg); border-color: var(--foreground); }
+.sdm-card.selected                { border-color: var(--foreground); }
 .sdm-card.selected .sdm-card-name { font-weight: 700; }
 
 .sdm-card.disabled {
@@ -1205,7 +1197,7 @@ html.light .maplibregl-canvas {
 
 .sb-root {
   position: fixed;
-  bottom: calc(var(--bar-height) + 24px);
+  bottom: 24px;
   right: 24px;
   z-index: 100;
   display: flex;
@@ -1412,8 +1404,8 @@ html.light .maplibregl-canvas {
 @media (max-width: 1400px) {
   .navbar-inner,
   .hero-content,
-  .footer-content,
-  .projects-content { max-width: 55%; }
+  .projects-content,
+  .ph-root              { max-width: 55%; }
 
   .sdm-left { width: 400px; }
 }
@@ -1425,13 +1417,12 @@ html.light .maplibregl-canvas {
 @media (max-width: 1200px) {
   .navbar-inner,
   .hero-content,
-  .footer-content,
-  .projects-content { max-width: 65%; }
+  .projects-content,
+  .ph-root              { max-width: 65%; }
 }
 
 @media (max-width: 992px) {
   .navbar-inner,
-  .footer-content,
   .projects-content { max-width: 80%; }
 
   .hero-content {
@@ -1443,6 +1434,7 @@ html.light .maplibregl-canvas {
   .profile-img { width: 200px; height: 200px; }
 
   .ph-root {
+    max-width: 80%;
     grid-template-columns: 1fr;
     grid-template-rows: 240px auto;
   }
@@ -1458,8 +1450,8 @@ html.light .maplibregl-canvas {
 
   .navbar-inner,
   .hero-content,
-  .footer-content,
-  .projects-content { max-width: 90%; }
+  .projects-content,
+  .ph-root              { max-width: 90%; }
 
   .hero-content { grid-template-columns: 1fr; }
   .hero-image   { justify-content: start; }
@@ -1477,14 +1469,13 @@ html.light .maplibregl-canvas {
 @media (max-width: 576px) {
   .navbar-inner,
   .hero-content,
-  .footer-content,
   .projects-content { max-width: 95%; }
 
   .hero-section,
   .projects-section { padding: 2.5rem 0; }
   .hero-name        { font-size: 1.75rem; }
 
-  .ph-root       { grid-template-rows: 200px auto; }
+  .ph-root       { max-width: 95%; grid-template-rows: 200px auto; }
   .ph-image-pane { min-height: 200px; }
   .ph-title      { font-size: 1.2rem; }
   .ph-content    { padding: 1.25rem 1rem; }

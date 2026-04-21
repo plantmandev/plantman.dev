@@ -5,7 +5,6 @@ import clsx from "clsx";
 import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
 
 import { config } from "@fortawesome/fontawesome-svg-core";
 import "@fortawesome/fontawesome-svg-core/styles.css";
@@ -46,7 +45,6 @@ export default function RootLayout({
           <div className="relative flex flex-col min-h-screen">
             <Navbar />
             <main className="flex-grow">{children}</main>
-            <Footer />
           </div>
         </Providers>
       </body>
