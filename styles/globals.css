@@ -44,6 +44,10 @@
   --butterfly-card-bg: rgba(36,36,36,0.85);  /* sdm species cards — slightly lifted in dark mode */
   --sdm-panel-bg:      var(--panel-bg);       /* sdm left panel bg */
   --sdm-panel-border:  var(--border);         /* sdm left panel dividers */
+  /* hobet accent — NDVI green */
+  --hobet-green:          #78c679;
+  --hobet-green-bg:       #0c1c0c;
+  --hobet-green-bg-hover: #142814;
 }
 
 .light {
@@ -76,6 +80,10 @@
   /* component-specific surfaces */
   --hero-bg:           var(--card-bg);         /* hero band — matches card surface */
   --butterfly-card-bg: rgba(148,112,72,0.90); /* butterfly cards — warm dark brown */
+  /* hobet accent — muted green for amber background readability */
+  --hobet-green:          #3a7a38;
+  --hobet-green-bg:       rgba(58, 122, 56, 0.10);
+  --hobet-green-bg-hover: rgba(58, 122, 56, 0.18);
 }
 
 /* ==========================================================================
@@ -1192,6 +1200,324 @@ html.light .maplibregl-canvas {
 }
 
 /* ==========================================================================
+   HOBET — MINE ANALYSIS
+   ========================================================================== */
+
+.hobet-root {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 11px;
+}
+
+.hobet-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: var(--background);
+}
+
+.hobet-loading-text {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.hobet-left {
+  width: 500px;
+  min-width: 500px;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--sdm-panel-bg);
+  border-right: 1px solid var(--sdm-panel-border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--sdm-panel-border) transparent;
+  z-index: 1;
+}
+
+.hobet-block {
+  padding: 14px 16px;
+  background: var(--sdm-panel-bg);
+  border-bottom: 1px solid var(--sdm-panel-border);
+  flex-shrink: 0;
+}
+
+.hobet-map-wrapper {
+  flex: 1;
+  position: relative;
+  height: 100%;
+}
+
+.hobet-eyebrow {
+  margin: 0 0 4px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hobet-title {
+  margin: 0 0 5px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+.hobet-subtitle {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.hobet-band-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hobet-band-btn {
+  flex: 1;
+  padding: 7px 0;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.hobet-band-btn:hover {
+  color: var(--foreground);
+  border-color: var(--btn-border-hover);
+}
+
+.hobet-band-active {
+  background: var(--hobet-green-bg);
+  border-color: var(--hobet-green);
+  color: var(--hobet-green);
+}
+
+.hobet-band-hint {
+  margin: 0 0 10px;
+  font-size: 9.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.hobet-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hobet-legend-label {
+  font-size: 9px;
+  color: var(--muted);
+  min-width: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hobet-legend-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.hobet-year-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.hobet-year-number {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hobet-play-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--hobet-green-bg);
+  border: 1px solid var(--hobet-green);
+  border-radius: 50%;
+  color: var(--hobet-green);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+
+.hobet-play-btn:hover { background: var(--hobet-green-bg-hover); }
+
+.hobet-scrubber {
+  height: 4px;
+  background: var(--dark-gray);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 6px;
+  outline: none;
+}
+
+.hobet-scrubber-fill {
+  height: 100%;
+  background: var(--hobet-green);
+  border-radius: 2px;
+  transition: width 0.08s linear;
+  pointer-events: none;
+}
+
+.hobet-scrubber-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.hobet-year-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+}
+
+.hobet-year-cell {
+  padding: 4px 0;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.08s, background 0.08s, border-color 0.08s;
+  font-variant-numeric: tabular-nums;
+}
+
+.hobet-year-cell:hover {
+  background: var(--btn-bg-hover);
+  color: var(--foreground);
+}
+
+.hobet-year-active {
+  background: var(--hobet-green-bg) !important;
+  border-color: var(--hobet-green) !important;
+  color: var(--hobet-green) !important;
+}
+
+.hobet-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.hobet-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hobet-stat-label {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hobet-stat-val {
+  font-size: 14px;
+  color: var(--foreground);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hobet-spark-title {
+  margin: 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hobet-spark-legend {
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--muted);
+  display: flex;
+  gap: 10px;
+}
+
+.hobet-findings-title {
+  margin: 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hobet-findings {
+  margin: 0 0 10px;
+  padding: 0 0 0 14px;
+  list-style: disc;
+  color: var(--muted);
+  line-height: 2.1;
+  font-size: 10px;
+}
+
+.hobet-findings li::marker { color: var(--border); }
+
+.hobet-accent {
+  color: var(--hobet-green);
+  font-weight: 700;
+}
+
+.hobet-dim { color: var(--light-gray); }
+
+.hobet-data-note {
+  margin: 0;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.hobet-opacity-label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: default;
+}
+
+.hobet-opacity-slider {
+  width: 100%;
+  accent-color: var(--hobet-green);
+  cursor: pointer;
+}
+
+/* ==========================================================================
    SUPPORT BAR
    ========================================================================== */
 
@@ -1407,11 +1733,13 @@ html.light .maplibregl-canvas {
   .projects-content,
   .ph-root              { max-width: 55%; }
 
-  .sdm-left { width: 400px; }
+  .sdm-left  { width: 400px; }
+  .hobet-left { width: 400px; min-width: 400px; }
 }
 
 @media (max-width: 1280px) {
-  .sdm-left { width: 340px; }
+  .sdm-left  { width: 340px; }
+  .hobet-left { width: 340px; min-width: 340px; }
 }
 
 @media (max-width: 1200px) {

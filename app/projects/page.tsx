@@ -16,13 +16,13 @@ const FEATURED: HighlightedProject[] = [
     githubHref: "https://github.com/plantmandev/species-distribution-model",
   },
   {
-    title: "Butterfly Population Analysis",
-    description: "Statistical analysis of Lepidoptera survey data collected in the Colorado Front Range...",
-    date: "March 15, 2025",
-    readTime: "8 min read",
-    tags: ["R", "GBIF", "iNaturalist", "ggplot2"],
-    demoHref: "/projects/butterfly-population",
-    githubHref: "https://github.com/plantmandev/plantman.dev",
+    title: "Hobet Mine Analysis",
+    description: "40-year Landsat time series of mountaintop removal and post-mining vegetation recovery at the Hobet Mine, West Virginia. Scrub through annual NDVI and NBR composites from 1985 to 2025.",
+    date: "April 22, 2026",
+    tags: ["Remote Sensing", "GIS", "deck.gl", "Landsat", "Python"],
+    image: "/tiles/ndvi/2000/10/279/394.png",
+    imageAlt: "NDVI composite of Hobet Mine, West Virginia — year 2000",
+    demoHref: "/projects/hobet-mine-analysis",
   },
 ];
 

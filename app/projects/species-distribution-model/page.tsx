@@ -55,10 +55,10 @@ const SATELLITE_STYLE = {
   sources: {
     satellite: {
       type: "raster" as const,
-      tiles: ["https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg"],
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      maxzoom: 8,
-      attribution: "Imagery courtesy NASA Earth Observatory",
+      maxzoom: 23,
+      attribution: "Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
     },
   },
   layers: [{ id: "satellite", type: "raster" as const, source: "satellite" }],

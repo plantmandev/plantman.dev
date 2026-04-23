@@ -21,6 +21,7 @@ export type HighlightedProject = {
   image?: string;        // static image path (fallback)
   video?: string;        // video path e.g. /thumbnails/species-distribution-model-thumbnail.mp4
   imageAlt?: string;
+  imagePosition?: string; // CSS object-position, defaults to "center top"
   demoHref?: string;
   githubHref?: string;
 };
@@ -138,6 +139,7 @@ export default function ProjectHighlight({
             src={project.image}
             alt={project.imageAlt ?? project.title}
             className={`ph-image ${fading ? "ph-fading" : ""}`}
+            style={{ objectPosition: project.imagePosition ?? "center top" }}
           />
         ) : (
           <div className="ph-image-placeholder">
