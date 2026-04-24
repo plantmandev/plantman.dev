@@ -253,12 +253,23 @@ export default function HobetPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [years, frameMeta]);
 
-  // Year playback
+  // Year playback — pauses for 3 extra ticks at 2015 (NDVI inflection point)
   useEffect(() => {
     if (!isPlaying || years.length === 0) return;
-    const id = setInterval(() => setYearIdx(i => (i + 1) % years.length), 600);
+    let pauseCount = 0;
+    const PAUSE_TICKS = 3;
+    const id = setInterval(() => {
+      setYearIdx(i => {
+        if (years[i] === 2015 && pauseCount < PAUSE_TICKS) {
+          pauseCount++;
+          return i;
+        }
+        pauseCount = 0;
+        return (i + 1) % years.length;
+      });
+    }, 600);
     return () => clearInterval(id);
-  }, [isPlaying, years.length]);
+  }, [isPlaying, years]);
 
   const currentYear = years[yearIdx] ?? 1985;
   const currentStat = stats[String(currentYear)];
@@ -305,6 +316,10 @@ export default function HobetPage() {
   }, [band, currentYear, frameMeta, loadedCount]);
 
   const progressPct = years.length > 1 ? (yearIdx / (years.length - 1)) * 100 : 0;
+  const milestone2015Idx = years.indexOf(2015);
+  const milestone2015Pct = years.length > 1 && milestone2015Idx >= 0
+    ? (milestone2015Idx / (years.length - 1)) * 100
+    : null;
 
   if (!mounted || years.length === 0) {
     return (
@@ -321,7 +336,7 @@ export default function HobetPage() {
       <div className="hobet-left">
 
         {/* Header */}
-        <div className="hobet-block">
+        <div className="hobet-block" style={{ paddingTop: 28 }}>
           <p className="hobet-eyebrow">Remote Sensing · West Virginia</p>
           <h1 className="hobet-title">Hobet Mine</h1>
           <p className="hobet-subtitle">
@@ -333,7 +348,6 @@ export default function HobetPage() {
         {/* Year + playback */}
         <div className="hobet-block">
           <div className="hobet-year-row">
-            <span className="hobet-year-number">{currentYear}</span>
             <button
               className="hobet-play-btn"
               onClick={() => setIsPlaying(p => !p)}
@@ -342,6 +356,7 @@ export default function HobetPage() {
             >
               {frameMeta !== null && loadedCount < totalFrames ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
             </button>
+            <span className="hobet-year-number">{currentYear}</span>
           </div>
 
           <div
@@ -364,6 +379,17 @@ export default function HobetPage() {
             }}
           >
             <div className="hobet-scrubber-fill" style={{ width: `${progressPct}%` }} />
+            {milestone2015Pct !== null && (
+              <div style={{
+                position: "absolute",
+                left: `${milestone2015Pct}%`,
+                top: -8,
+                bottom: -8,
+                width: 2,
+                background: "#c0392b",
+                pointerEvents: "none",
+              }} />
+            )}
           </div>
 
           <div className="hobet-scrubber-labels">

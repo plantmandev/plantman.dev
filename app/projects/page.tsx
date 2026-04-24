@@ -18,7 +18,7 @@ const FEATURED: HighlightedProject[] = [
   {
     title: "Hobet Mine Analysis",
     description: "40-year Landsat time series of mountaintop removal and post-mining vegetation recovery at the Hobet Mine, West Virginia. Scrub through annual NDVI and NBR composites from 1985 to 2025.",
-    date: "April 22, 2026",
+    date: "December 8, 2023",
     tags: ["Remote Sensing", "GIS", "deck.gl", "Landsat", "Python"],
     video: "/thumbnails/hobit-mine-analysis-thumbnail.mp4",
     demoHref: "/projects/hobet-mine-analysis",
@@ -49,8 +49,6 @@ interface CardData {
   description: string;
   date: string;
   readTime?: string;
-  image?: string;
-  imageAlt?: string;
   githubHref?: string;
   externalHref?: string;
   postHref?: string;
@@ -62,8 +60,6 @@ const CARDS: CardData[] = [
     title: "Species Distribution Model",
     description: "Interactive visualization of butterfly occurrence data across North America, built with deck.gl and PostGIS. Temporal animation lets you scrub through observations from 2000–2024.",
     date: "January 16, 2026",
-    image: "/species/danaus-plexippus.svg",
-    imageAlt: "Monarch butterfly",
     githubHref: "https://github.com/plantmandev/species-distribution-model",
     postHref: "/projects/species-distribution-model",
     tags: ["GIS", "PostGIS", "GBIF", "deck.gl", "scikit-learn"],
@@ -72,8 +68,6 @@ const CARDS: CardData[] = [
     title: "Hobet Mine Analysis",
     description: "40-year Landsat time series of mountaintop removal and post-mining vegetation recovery at the Hobet Mine, West Virginia. Scrub through annual NDVI and NBR composites from 1985 to 2025.",
     date: "December 8, 2023",
-    image: "/frames/ndvi/2000.png",
-    imageAlt: "NDVI composite 2000",
     githubHref: "https://github.com/plantmandev/hobet-mine-analysis",
     postHref: "/projects/hobet-mine-analysis",
     tags: ["GIS", "deck.gl", "Python", "Remote Sensing", "Landsat"],
@@ -116,8 +110,6 @@ export default function Projects() {
                 description={card.description}
                 date={card.date}
                 readTime={card.readTime}
-                image={card.image}
-                imageAlt={card.imageAlt}
                 githubHref={card.githubHref}
                 externalHref={card.externalHref}
                 postHref={card.postHref}

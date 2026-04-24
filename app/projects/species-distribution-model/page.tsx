@@ -172,7 +172,7 @@ function SpeciesCard({ sp, isSelected, onClick, isTutorialTarget, showTip, hasFl
               src="/logos/Anki Logo.svg.png"
               alt="Anki flashcard available"
             />
-            <span className="sdm-card-anki-tooltip">In free Anki deck</span>
+            <span className="sdm-card-anki-tooltip">included in anki deck</span>
           </div>
         )}
         {sp.disabled && (
@@ -483,11 +483,11 @@ export default function SDMPage() {
                   const vp = new WebMercatorViewport({ width: window.innerWidth, height: window.innerHeight });
                   const { longitude, latitude, zoom } = vp.fitBounds(
                     [[minLng, minLat], [maxLng, maxLat]],
-                    { padding: 60 }
+                    { padding: 100 }
                   );
                   setViewState({
                     longitude, latitude,
-                    zoom: Math.min(zoom, 8),
+                    zoom: Math.min(zoom, 7),
                     transitionDuration: 1200,
                     transitionInterpolator: new FlyToInterpolator({ speed: 1.5 }),
                   });
@@ -513,6 +513,14 @@ export default function SDMPage() {
     load();
     return () => { cancelled = true; };
   }, [selectedSpecies, mounted, canvasReady]);
+
+  // ── Autoplay once data finishes loading ──────────────────────────────────
+  useEffect(() => {
+    if (!loading && data.length > 0 && !selectedSpecies?.disabled) {
+      setIsPlaying(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   // ── Playback ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -609,8 +617,7 @@ export default function SDMPage() {
       <div className="sdm-left">
 
         {/* Title + Search — anchored, never scrolls */}
-        <div className="sdm-block" style={{ padding: "16px 14px 10px" }}>
-          <p className="sdm-section-title" style={{ marginBottom: 8 }}>Butterflies</p>
+        <div className="sdm-block" style={{ padding: "28px 14px 10px" }}>
           <div className="sdm-search-wrapper" style={{ marginBottom: 0 }}>
             <input
               type="text"
@@ -695,13 +702,11 @@ export default function SDMPage() {
           </div>
         )}
 
-        {/* Stacked panels — bottom-right of map */}
-        <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", gap: 8 }}>
-
-          {/* Playback panel */}
+        {/* Panel — bottom-right of map */}
+        <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100 }}>
           <MapPanel
             title={selectedSpecies?.commonName ?? "Select a species"}
-            width={380}
+            width={430}
             collapsible={false}
             style={{ position: "static" }}
           >
@@ -790,10 +795,9 @@ export default function SDMPage() {
                 <YearBlock key={y} year={y} status={yearStatuses[y]} />
               ))}
             </div>
-          </MapPanel>
 
-          {/* Controls panel */}
-          <MapPanel title="Controls" width={380} style={{ position: "static" }}>
+            <MapPanelDivider />
+
             <MapPanelRow label="Satellite">
               <button
                 className={`map-panel-btn${terrainMode ? " active" : ""}`}
@@ -810,7 +814,6 @@ export default function SDMPage() {
               </a>
             </MapPanelRow>
           </MapPanel>
-
         </div>
       </div>
 

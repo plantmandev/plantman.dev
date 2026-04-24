@@ -954,7 +954,7 @@ html.light .logo-light { display: block; }
 }
 
 .sdm-scientific-name {
-  font-size: 12px;
+  font-size: 13px;
   font-style: italic;
   color: var(--light-gray);
   margin: 3px 0 0 0;
@@ -995,9 +995,9 @@ html.light .logo-light { display: block; }
 .sdm-play-btn:hover    { background: var(--foreground); color: var(--background); }
 .sdm-play-btn:disabled { border-color: var(--border); color: var(--border); cursor: default; }
 
-.sdm-stat-col   { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-.sdm-stat-label { font-size: 11px; font-weight: 700; color: var(--foreground); }
-.sdm-stat-value { font-size: 11px; color: var(--muted); }
+.sdm-stat-col   { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.sdm-stat-label { font-size: 12px; font-weight: 700; color: var(--foreground); }
+.sdm-stat-value { font-size: 12px; color: var(--muted); }
 
 .sdm-interval-wrapper {
   position: relative;
@@ -1008,12 +1008,12 @@ html.light .logo-light { display: block; }
 }
 
 .sdm-interval-arrow {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--muted);
   background: var(--btn-bg);
   color: var(--foreground);
-  font-size: 11px;
+  font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1067,11 +1067,11 @@ html.light .logo-light { display: block; }
 
 .sdm-years        { display: flex; justify-content: space-between; margin-bottom: 12px; }
 .sdm-year-block   { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.sdm-year-label   { font-size: 10px; color: var(--light-gray); }
+.sdm-year-label   { font-size: 11px; color: var(--light-gray); }
 
 .sdm-year-cell {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border: 1px solid var(--light-gray);
   display: flex;
   align-items: center;
@@ -1911,7 +1911,7 @@ html.light .maplibregl-canvas {
 .map-panel-header:hover { background: var(--map-panel-header-bg-hover); }
 
 .map-panel-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1938,7 +1938,7 @@ html.light .maplibregl-canvas {
 }
 
 .map-panel-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1964,11 +1964,11 @@ html.light .maplibregl-canvas {
   justify-content: center;
   gap: 6px;
   padding: 0 10px;
-  height: 28px;
+  height: 30px;
   background: var(--btn-bg);
   border: 1px solid var(--border);
   color: var(--foreground);
-  font-size: 10px;
+  font-size: 11px;
   font-family: inherit;
   font-weight: 700;
   letter-spacing: 0.06em;

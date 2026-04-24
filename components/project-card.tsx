@@ -10,8 +10,6 @@ export type ProjectCardProps = {
   description: string;
   date: string;
   readTime?: string;
-  image?: string;
-  imageAlt?: string;
   postHref?: string;
   githubHref?: string;
   externalHref?: string;
@@ -23,8 +21,6 @@ export default function ProjectCard({
   description,
   date,
   readTime,
-  image,
-  imageAlt,
   postHref,
   githubHref,
   externalHref,
@@ -87,17 +83,6 @@ export default function ProjectCard({
           )}
         </div>
       </div>
-
-      {/* Right — image */}
-      {image && (
-        <div className="project-card-image-wrapper">
-          <img
-            src={image}
-            alt={imageAlt ?? title}
-            className="project-card-image"
-          />
-        </div>
-      )}
     </div>
   );
 }
