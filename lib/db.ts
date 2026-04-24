@@ -18,10 +18,16 @@ export function getPool(): Pool {
     };
 
     if (connectionString) {
-      console.log('🔌 DB connecting to:', connectionString.includes('neon.tech') ? 'Neon' : 'Custom URL');
+      const isNeon = connectionString.includes('neon.tech');
+      // channel_binding=require is incompatible with rejectUnauthorized:false —
+      // strip it so pg can complete the SCRAM handshake over plain SSL.
+      const safeUrl = connectionString
+        .replace(/[&?]channel_binding=[^&]*/g, '')
+        .replace(/\?&/, '?');
+      console.log('🔌 DB connecting to:', isNeon ? 'Neon' : 'Custom URL');
       global._pgPool = new Pool({
-        connectionString,
-        ssl: connectionString.includes('neon.tech') ? { rejectUnauthorized: false } : false,
+        connectionString: safeUrl,
+        ssl: isNeon ? { rejectUnauthorized: false } : false,
         ...shared,
       });
     } else {

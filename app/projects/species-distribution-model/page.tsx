@@ -5,7 +5,7 @@ import { useTheme } from "next-themes";
 import { ScatterplotLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
-import SupportBar from "@/components/support-bar";
+import MapPanel, { MapPanelRow, MapPanelDivider } from "@/components/map-panel";
 
 const SPRITE_FRAMES = 20;
 function SpriteLoader({ size = 36 }: { size?: number }) {
@@ -141,7 +141,16 @@ function getSpeciesImage(scientificName: string): string {
   return `/species/${slug}.svg`;
 }
 
-function SpeciesCard({ sp, isSelected, onClick, isTutorialTarget, showTip }: any) {
+type SpeciesCardProps = {
+  sp: Species;
+  isSelected: boolean;
+  onClick: () => void;
+  isTutorialTarget?: boolean;
+  showTip?: boolean;
+  hasFlashcard?: boolean;
+};
+
+function SpeciesCard({ sp, isSelected, onClick, isTutorialTarget, showTip, hasFlashcard }: SpeciesCardProps) {
   const btn = (
     <button
       onClick={sp.disabled ? undefined : onClick}
@@ -156,6 +165,16 @@ function SpeciesCard({ sp, isSelected, onClick, isTutorialTarget, showTip }: any
           alt={sp.commonName}
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
+        {hasFlashcard && (
+          <div className="sdm-card-anki-wrapper">
+            <img
+              className="sdm-card-anki-badge"
+              src="/logos/Anki Logo.svg.png"
+              alt="Anki flashcard available"
+            />
+            <span className="sdm-card-anki-tooltip">In free Anki deck</span>
+          </div>
+        )}
         {sp.disabled && (
           <div className="sdm-card-disabled-overlay">
             <svg
@@ -197,6 +216,7 @@ function SelectorSection({
   visibleCount,
   onLoadMore,
   tutorialCardIndex,
+  flashcardSpecies,
 }: {
   title: string;
   items: Species[];
@@ -205,6 +225,7 @@ function SelectorSection({
   visibleCount: number;
   onLoadMore: () => void;
   tutorialCardIndex?: number | null;
+  flashcardSpecies?: Set<string>;
 }) {
   const visible = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;
@@ -236,6 +257,7 @@ function SelectorSection({
                 onClick={() => onSelect(sp)}
                 isTutorialTarget={tutorialCardIndex != null && index === tutorialCardIndex}
                 showTip={tutorialCardIndex != null && index === tutorialCardIndex}
+                hasFlashcard={flashcardSpecies?.has(sp.scientificName) ?? false}
               />
             ))}
           </div>
@@ -281,11 +303,31 @@ export default function SDMPage() {
 
   const [tutorialStep, setTutorialStep]         = useState<number | null>(null);
   const [tutorialCardIndex, setTutorialCardIndex] = useState<number>(0);
+  const [flashcardSpecies, setFlashcardSpecies] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery]           = useState("");
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 800);
+  }, []);
+
+  // ── Load flashcard species list ──────────────────────────────────────────
+  useEffect(() => {
+    fetch("/species-distribution-model/lepidoptera-flashcards.csv")
+      .then(r => r.text())
+      .then(text => {
+        const names = new Set<string>();
+        const lines = text.trim().split("\n").slice(1);
+        for (const line of lines) {
+          const cols = line.split(",");
+          const name = cols[0]?.trim();
+          const hasCard = cols[2]?.trim().toLowerCase() === "yes";
+          if (name && hasCard) names.add(name);
+        }
+        setFlashcardSpecies(names);
+      })
+      .catch(() => {});
   }, []);
 
 
@@ -545,9 +587,14 @@ export default function SDMPage() {
       ? ((currentTime - timeRange[0]) / (timeRange[1] - timeRange[0])) * 100
       : 0;
 
-  const butterflies  = species.filter((s) => !s.category || s.category === "lepidoptera");
-  const nectarPlants = species.filter((s) => s.category === "nectar_plant");
-  const hostPlants   = species.filter((s) => s.category === "host_plant");
+  const q = searchQuery.trim().toLowerCase();
+  const matchesSearch = (s: Species) =>
+    !q || s.commonName.toLowerCase().includes(q) || s.scientificName.toLowerCase().includes(q);
+
+  const butterflies  = species.filter((s) => (!s.category || s.category === "lepidoptera") && matchesSearch(s));
+  const nectarPlants = species.filter((s) => s.category === "nectar_plant" && matchesSearch(s));
+  const hostPlants   = species.filter((s) => s.category === "host_plant"   && matchesSearch(s));
+  const noResults    = q.length > 0 && butterflies.length === 0 && nectarPlants.length === 0 && hostPlants.length === 0;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -561,152 +608,64 @@ export default function SDMPage() {
       {/* ── Left panel ───────────────────────────────────────────────────── */}
       <div className="sdm-left">
 
-        {/* Info */}
-        <div className="sdm-block sdm-info">
-          {selectedSpecies ? (
+        {/* Title + Search — anchored, never scrolls */}
+        <div className="sdm-block" style={{ padding: "16px 14px 10px" }}>
+          <p className="sdm-section-title" style={{ marginBottom: 8 }}>Butterflies</p>
+          <div className="sdm-search-wrapper" style={{ marginBottom: 0 }}>
+            <input
+              type="text"
+              className="sdm-search-input"
+              placeholder="Search species…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button className="sdm-search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">×</button>
+            )}
+          </div>
+        </div>
+
+        {/* Species selector — fills remaining height */}
+        <div className="sdm-block sdm-selector">
+          {noResults ? (
+            <p className="sdm-search-empty">No species match &ldquo;{searchQuery}&rdquo;</p>
+          ) : (
             <>
-              <p className="sdm-common-name">{selectedSpecies.commonName}</p>
-              <p className="sdm-scientific-name">{selectedSpecies.scientificName}</p>
-              {selectedSpecies.disabled && (
-                <p className="sdm-description">
-                  This species is temporarily unavailable.
-                </p>
+              {butterflies.length > 0 && (
+                <SelectorSection
+                  title="Butterflies"
+                  items={butterflies}
+                  selectedFileName={selectedSpecies?.fileName ?? ""}
+                  onSelect={handleSelectSpecies}
+                  visibleCount={q ? Infinity : visibleCount}
+                  onLoadMore={handleLoadMore}
+                  tutorialCardIndex={tutorialStep === 1 ? tutorialCardIndex : null}
+                  flashcardSpecies={flashcardSpecies}
+                />
+              )}
+              {nectarPlants.length > 0 && (
+                <SelectorSection
+                  title="Nectar Plants"
+                  items={nectarPlants}
+                  selectedFileName={selectedSpecies?.fileName ?? ""}
+                  onSelect={handleSelectSpecies}
+                  visibleCount={q ? Infinity : visibleCount}
+                  onLoadMore={handleLoadMore}
+                  flashcardSpecies={flashcardSpecies}
+                />
+              )}
+              {hostPlants.length > 0 && (
+                <SelectorSection
+                  title="Host Plants"
+                  items={hostPlants}
+                  selectedFileName={selectedSpecies?.fileName ?? ""}
+                  onSelect={handleSelectSpecies}
+                  visibleCount={q ? Infinity : visibleCount}
+                  onLoadMore={handleLoadMore}
+                  flashcardSpecies={flashcardSpecies}
+                />
               )}
             </>
-          ) : (
-            <p className="sdm-description">Loading…</p>
-          )}
-        </div>
-
-        {/* Playback */}
-        <div className="sdm-block sdm-playback">
-          <div className="sdm-playback-row">
-
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => {
-                  setIsPlaying(!isPlaying);
-                  advanceTutorial(3);
-                }}
-                className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
-                disabled={loading || selectedSpecies?.disabled}
-              >
-                {loading ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
-              </button>
-              {tutorialStep === 3 && (
-                <div className="sdm-tutorial-tip">press play</div>
-              )}
-            </div>
-
-            <div className="sdm-stat-col">
-              <span className="sdm-stat-label">Total Records</span>
-              <span className="sdm-stat-value">
-                {loading ? "…" : selectedSpecies?.disabled ? "—" : roundObs(selectedSpecies?.actualObs ?? data.length)}
-              </span>
-            </div>
-
-            <div className="sdm-stat-col">
-              <span className="sdm-stat-label">Date</span>
-              <span className="sdm-stat-value">
-                {selectedSpecies?.disabled ? "—" : loading ? "…" : currentDate}
-              </span>
-            </div>
-
-            <div className="sdm-interval-wrapper">
-              <div className="sdm-stat-col">
-                <span className="sdm-stat-label">Interval</span>
-                <span className="sdm-stat-value">{safeStep.label}</span>
-              </div>
-              <div style={{ position: "relative" }}>
-                <button
-                  ref={intervalArrowRef}
-                  onClick={() => {
-                    const next = !showStepMenu;
-                    if (next && intervalArrowRef.current) {
-                      const rect = intervalArrowRef.current.getBoundingClientRect();
-                      setDropdownAnchor({
-                        top:   rect.bottom + 4,
-                        right: window.innerWidth - rect.right,
-                      });
-                    }
-                    setShowStepMenu(next);
-                    advanceTutorial(2);
-                  }}
-                  className={`sdm-interval-arrow${tutorialStep === 2 ? " sdm-tutorial-target" : ""}`}
-                >
-                  ▼
-                </button>
-                {tutorialStep === 2 && (
-                  <div className="sdm-tutorial-tip">choose an interval</div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div
-            role="slider"
-            aria-label="Playback position"
-            aria-valuenow={Math.round(progressPct)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            tabIndex={0}
-            className="sdm-progress-track"
-            onClick={(e) => {
-              if (selectedSpecies?.disabled) return;
-              const rect = e.currentTarget.getBoundingClientRect();
-              const pct  = (e.clientX - rect.left) / rect.width;
-              setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
-              setIsPlaying(false);
-            }}
-            onKeyDown={(e) => {
-              if (selectedSpecies?.disabled) return;
-              const stepMs = (safeStep.days === -1 ? ALL_TIME_STEP_DAYS : safeStep.days) * 86400000;
-              if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + stepMs, timeRange[1]));
-              if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - stepMs, timeRange[0]));
-            }}
-          >
-            <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
-          </div>
-
-          {/* Year grid */}
-          <div className="sdm-years">
-            {YEARS.map((y) => (
-              <YearBlock key={y} year={y} status={yearStatuses[y]} />
-            ))}
-          </div>
-        </div>
-
-        {/* Species selector — tutorial step 1 */}
-        <div className="sdm-block sdm-selector">
-          <SelectorSection
-            title="Butterflies"
-            items={butterflies}
-            selectedFileName={selectedSpecies?.fileName ?? ""}
-            onSelect={handleSelectSpecies}
-            visibleCount={visibleCount}
-            onLoadMore={handleLoadMore}
-            tutorialCardIndex={tutorialStep === 1 ? tutorialCardIndex : null}
-          />
-          {nectarPlants.length > 0 && (
-            <SelectorSection
-              title="Nectar Plants"
-              items={nectarPlants}
-              selectedFileName={selectedSpecies?.fileName ?? ""}
-              onSelect={handleSelectSpecies}
-              visibleCount={visibleCount}
-              onLoadMore={handleLoadMore}
-            />
-          )}
-          {hostPlants.length > 0 && (
-            <SelectorSection
-              title="Host Plants"
-              items={hostPlants}
-              selectedFileName={selectedSpecies?.fileName ?? ""}
-              onSelect={handleSelectSpecies}
-              visibleCount={visibleCount}
-              onLoadMore={handleLoadMore}
-            />
           )}
         </div>
 
@@ -735,6 +694,124 @@ export default function SDMPage() {
             <span className="sdm-map-loading-text">temporarily unavailable</span>
           </div>
         )}
+
+        {/* Stacked panels — bottom-right of map */}
+        <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", gap: 8 }}>
+
+          {/* Playback panel */}
+          <MapPanel
+            title={selectedSpecies?.commonName ?? "Select a species"}
+            width={380}
+            collapsible={false}
+            style={{ position: "static" }}
+          >
+            {selectedSpecies && (
+              <p className="sdm-scientific-name" style={{ margin: 0 }}>{selectedSpecies.scientificName}</p>
+            )}
+            <MapPanelDivider />
+
+            <div className="sdm-playback-row" style={{ marginBottom: 0 }}>
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => { setIsPlaying(!isPlaying); advanceTutorial(3); }}
+                  className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
+                  disabled={loading || selectedSpecies?.disabled}
+                >
+                  {loading ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
+                </button>
+                {tutorialStep === 3 && <div className="sdm-tutorial-tip">press play</div>}
+              </div>
+
+              <div className="sdm-stat-col">
+                <span className="sdm-stat-label">Total Records</span>
+                <span className="sdm-stat-value">
+                  {loading ? "…" : selectedSpecies?.disabled ? "—" : roundObs(selectedSpecies?.actualObs ?? data.length)}
+                </span>
+              </div>
+
+              <div className="sdm-stat-col">
+                <span className="sdm-stat-label">Date</span>
+                <span className="sdm-stat-value">
+                  {selectedSpecies?.disabled ? "—" : loading ? "…" : currentDate}
+                </span>
+              </div>
+
+              <div className="sdm-interval-wrapper">
+                <div className="sdm-stat-col">
+                  <span className="sdm-stat-label">Interval</span>
+                  <span className="sdm-stat-value">{safeStep.label}</span>
+                </div>
+                <div style={{ position: "relative" }}>
+                  <button
+                    ref={intervalArrowRef}
+                    onClick={() => {
+                      const next = !showStepMenu;
+                      if (next && intervalArrowRef.current) {
+                        const rect = intervalArrowRef.current.getBoundingClientRect();
+                        setDropdownAnchor({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                      }
+                      setShowStepMenu(next);
+                      advanceTutorial(2);
+                    }}
+                    className={`sdm-interval-arrow${tutorialStep === 2 ? " sdm-tutorial-target" : ""}`}
+                  >▼</button>
+                  {tutorialStep === 2 && <div className="sdm-tutorial-tip">choose an interval</div>}
+                </div>
+              </div>
+            </div>
+
+            <div
+              role="slider"
+              aria-label="Playback position"
+              aria-valuenow={Math.round(progressPct)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              tabIndex={0}
+              className="sdm-progress-track"
+              onClick={(e) => {
+                if (selectedSpecies?.disabled) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct  = (e.clientX - rect.left) / rect.width;
+                setCurrentTime(timeRange[0] + pct * (timeRange[1] - timeRange[0]));
+                setIsPlaying(false);
+              }}
+              onKeyDown={(e) => {
+                if (selectedSpecies?.disabled) return;
+                const stepMs = (safeStep.days === -1 ? ALL_TIME_STEP_DAYS : safeStep.days) * 86400000;
+                if (e.key === "ArrowRight") setCurrentTime((t) => Math.min(t + stepMs, timeRange[1]));
+                if (e.key === "ArrowLeft")  setCurrentTime((t) => Math.max(t - stepMs, timeRange[0]));
+              }}
+            >
+              <div className="sdm-progress-fill" style={{ width: `${progressPct}%` }} />
+            </div>
+
+            <div className="sdm-years" style={{ marginBottom: 0 }}>
+              {YEARS.map((y) => (
+                <YearBlock key={y} year={y} status={yearStatuses[y]} />
+              ))}
+            </div>
+          </MapPanel>
+
+          {/* Controls panel */}
+          <MapPanel title="Controls" width={380} style={{ position: "static" }}>
+            <MapPanelRow label="Satellite">
+              <button
+                className={`map-panel-btn${terrainMode ? " active" : ""}`}
+                onClick={() => setTerrainMode(m => !m)}
+              >
+                {terrainMode ? "On" : "Off"}
+              </button>
+            </MapPanelRow>
+            <MapPanelDivider />
+            <MapPanelRow label="Flashcards">
+              <a className="map-panel-btn" href="/flashcards/Lepidoptera.apkg" download>
+                <img src="/logos/Anki Logo.svg.png" alt="Anki" />
+                Download
+              </a>
+            </MapPanelRow>
+          </MapPanel>
+
+        </div>
       </div>
 
       {showStepMenu && dropdownAnchor && (
@@ -759,7 +836,6 @@ export default function SDMPage() {
       )}
 
       {error && <div className="sdm-error">{error}</div>}
-      <SupportBar terrainEnabled={terrainMode} onTerrainToggle={() => setTerrainMode(m => !m)} />
     </div>
   );
 }

@@ -10,23 +10,21 @@ type SpeciesRow = {
   gbif_taxon_key: number | null;
   occurrence_count: number;
   category: string;
-  notes: string | null;
 };
 
 export async function GET() {
   try {
     const species = await query<SpeciesRow>(`
-      SELECT 
+      SELECT
         s.scientific_name,
         s.common_name,
         s.family,
         s.gbif_taxon_key,
-        s.notes,
         COUNT(o.id) AS occurrence_count,
         'lepidoptera' AS category
       FROM species s
       LEFT JOIN lepidoptera_occurrences o ON o.species_id = s.id
-      GROUP BY s.id, s.scientific_name, s.common_name, s.family, s.gbif_taxon_key, s.notes
+      GROUP BY s.id, s.scientific_name, s.common_name, s.family, s.gbif_taxon_key
       ORDER BY occurrence_count DESC, s.scientific_name ASC
     `);
 
@@ -45,12 +43,12 @@ export async function GET() {
       countries_observed:  '',
       subregion:           '',
       color:               '',
-      notes:               sp.notes || '',
+      notes:               '',
       host_plants:         '',
       host_plant_families: '',
       host_plant_status:   '',
       category:            sp.category,
-      disabled:            (sp.notes ?? '').includes('#disabled'),
+      disabled:            false,
     }));
 
     return NextResponse.json(transformed);

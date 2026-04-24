@@ -2,12 +2,5 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "plantman.dev",
-  description: "",
-  navItems: [
-    {
-      label: "Home",
-      href: "/",
-    },
-    { label: "About", href: "/about" },
-  ],
+  description: "Portfolio of GIS, remote sensing, and data visualization projects.",
 };

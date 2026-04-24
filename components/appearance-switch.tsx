@@ -4,8 +4,8 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 const svgMask = (url: string): React.CSSProperties => ({
-  width: 32,
-  height: 32,
+  width: 26,
+  height: 26,
   backgroundColor: "var(--foreground)",
   WebkitMaskImage: `url(${url})`,
   WebkitMaskSize: "contain",

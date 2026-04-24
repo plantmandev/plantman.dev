@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { BitmapLayer } from "@deck.gl/layers";
 import { TileLayer } from "@deck.gl/geo-layers";
+import MapPanel, { MapPanelRow, MapPanelDivider } from "@/components/map-panel";
 
 const DeckGL  = dynamic(() => import("@deck.gl/react").then(m => m.default), { ssr: false });
 const MapLibre = dynamic(() => import("react-map-gl/maplibre").then(m => m.default), { ssr: false });
@@ -37,7 +38,7 @@ type FrameMeta = {
 const INITIAL_VIEW = {
   longitude: -81.85,
   latitude:  38.0,
-  zoom:      11,
+  zoom:      10,
   pitch:     0,
   bearing:   0,
 };
@@ -57,6 +58,27 @@ const SATELLITE_STYLE = {
   },
   layers: [{ id: "esri-satellite", type: "raster", source: "esri-satellite" }],
 };
+
+// ── Sprite loader ─────────────────────────────────────────────────────────────
+
+const SPRITE_FRAMES = 20;
+function SpriteLoader({ size = 36 }: { size?: number }) {
+  const [frame, setFrame] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setFrame(f => (f + 1) % SPRITE_FRAMES), 67);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <img
+      src={`/loading-loop/${String(frame).padStart(2, "0")}.png`}
+      width={size}
+      height={size * 1.25}
+      alt=""
+      aria-hidden
+      style={{ display: "block" }}
+    />
+  );
+}
 
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 
@@ -104,7 +126,7 @@ function Sparkline({
   const afterEndIdx    = years.indexOf(2020);
 
   return (
-    <svg width={W} height={H + 16} style={{ display: "block", overflow: "visible" }}>
+    <svg width="100%" viewBox={`0 0 ${W} ${H + 16}`} style={{ display: "block", overflow: "visible" }}>
       {beforeStartIdx >= 0 && beforeEndIdx >= 0 && (
         <rect
           x={xp(beforeStartIdx)} y={0}
@@ -135,15 +157,15 @@ function Sparkline({
         .map(yr => {
           const idx = years.indexOf(yr);
           return (
-            <text key={yr} x={xp(idx)} y={H + 13} textAnchor="middle" fontSize={8} fill="#3a3a50">
+            <text key={yr} x={xp(idx)} y={H + 13} textAnchor="middle" fontSize={8} style={{ fill: "var(--muted)" }}>
               {yr}
             </text>
           );
         })}
       {curIdx >= 0 && curVal != null && (
         <>
-          <line x1={xp(curIdx)} x2={xp(curIdx)} y1={0} y2={H} stroke="#ffffff" strokeWidth={0.5} opacity={0.15} />
-          <circle cx={xp(curIdx)} cy={yp(curVal)} r={3} fill="#0d0d12" stroke="#78C679" strokeWidth={1.5} />
+          <line x1={xp(curIdx)} x2={xp(curIdx)} y1={0} y2={H} stroke="currentColor" strokeWidth={0.5} opacity={0.15} />
+          <circle cx={xp(curIdx)} cy={yp(curVal)} r={3} fill="var(--background)" stroke="#78C679" strokeWidth={1.5} />
         </>
       )}
     </svg>
@@ -152,12 +174,16 @@ function Sparkline({
 
 // ── Colormap legend ───────────────────────────────────────────────────────────
 
+const NDVI_STEPS = ["#7B4A28","#9C6B3C","#B88B55","#D4AA78","#EDD9A8","#FFFFCC","#C4E89A","#8DC878","#4DAE54","#006837"];
+const NBR_STEPS  = ["#6B3200","#8C4A14","#B06530","#CE8A56","#E8B888","#F5F0D0","#C0D8A0","#8AB87A","#4A8A4A","#1A4731"];
+
 function Legend({ band }: { band: Band }) {
-  const gradient =
-    band === "ndvi"
-      ? "linear-gradient(to right, #8B5E3C, #C8A96E, #FFFFCC, #78C679, #006837)"
-      : "linear-gradient(to right, #7B3F00, #D4956A, #F5F5DC, #5DA35D, #1A4731)";
+  const steps  = band === "ndvi" ? NDVI_STEPS : NBR_STEPS;
   const [lo, hi] = band === "ndvi" ? ["−0.1", "0.8"] : ["−0.3", "0.8"];
+  const pct    = 100 / steps.length;
+  const gradient = `linear-gradient(to right, ${steps.map((c, i) =>
+    `${c} ${(i * pct).toFixed(1)}% ${((i + 1) * pct).toFixed(1)}%`
+  ).join(", ")})`;
 
   return (
     <div className="hobet-legend">
@@ -178,7 +204,6 @@ export default function HobetPage() {
   const [yearIdx,     setYearIdx]     = useState(0);
   const [isPlaying,   setIsPlaying]   = useState(false);
   const [stats,       setStats]       = useState<Record<string, Stat>>({});
-  const [opacity,     setOpacity]     = useState(0.85);
   const [frameMeta,   setFrameMeta]   = useState<FrameMeta | null>(null);
   const [loadedCount, setLoadedCount] = useState(0);
 
@@ -250,12 +275,12 @@ export default function HobetPage() {
             id: "frame-layer",
             image: img,
             bounds: [west, south, east, north] as [number, number, number, number],
-            opacity,
+            opacity: 1,
           }),
         ];
       }
     }
-    // Fallback: live tile fetch (used before render_frames.py has been run)
+    // Fallback: live tile fetch
     return [
       new TileLayer({
         id: `${band}-${currentYear}`,
@@ -263,7 +288,7 @@ export default function HobetPage() {
         minZoom: 9,
         maxZoom: 12,
         tileSize: 256,
-        opacity,
+        opacity: 1,
         renderSubLayers: (props: any) => {
           const { west, south, east, north } = props.tile.bbox;
           return new BitmapLayer({
@@ -277,11 +302,11 @@ export default function HobetPage() {
     ];
   // loadedCount is intentional: re-evaluate as each frame arrives
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [band, currentYear, opacity, frameMeta, loadedCount]);
+  }, [band, currentYear, frameMeta, loadedCount]);
 
   const progressPct = years.length > 1 ? (yearIdx / (years.length - 1)) * 100 : 0;
 
-  if (!mounted) {
+  if (!mounted || years.length === 0) {
     return (
       <div className="hobet-loading">
         <span className="hobet-loading-text">Initializing…</span>
@@ -305,27 +330,6 @@ export default function HobetPage() {
           </p>
         </div>
 
-        {/* Band toggle */}
-        <div className="hobet-block">
-          <div className="hobet-band-row">
-            {(["ndvi", "nbr"] as Band[]).map(b => (
-              <button
-                key={b}
-                className={`hobet-band-btn${band === b ? " hobet-band-active" : ""}`}
-                onClick={() => setBand(b)}
-              >
-                {b.toUpperCase()}
-              </button>
-            ))}
-          </div>
-          <p className="hobet-band-hint">
-            {band === "ndvi"
-              ? "Vegetation health — (NIR − Red) / (NIR + Red)"
-              : "Burn & disturbance recovery — (NIR − SWIR) / (NIR + SWIR)"}
-          </p>
-          <Legend band={band} />
-        </div>
-
         {/* Year + playback */}
         <div className="hobet-block">
           <div className="hobet-year-row">
@@ -334,8 +338,9 @@ export default function HobetPage() {
               className="hobet-play-btn"
               onClick={() => setIsPlaying(p => !p)}
               aria-label={isPlaying ? "Pause" : "Play"}
+              disabled={frameMeta !== null && loadedCount < totalFrames}
             >
-              {isPlaying ? "❚❚" : "▶"}
+              {frameMeta !== null && loadedCount < totalFrames ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
             </button>
           </div>
 
@@ -368,24 +373,46 @@ export default function HobetPage() {
           </div>
         </div>
 
-        {/* Year grid */}
-        <div className="hobet-block">
-          <div className="hobet-year-grid">
-            {years.map((yr, i) => (
-              <button
-                key={yr}
-                className={`hobet-year-cell${yr === currentYear ? " hobet-year-active" : ""}`}
-                onClick={() => { setYearIdx(i); setIsPlaying(false); }}
-                title={String(yr)}
-              >
-                {String(yr).slice(2)}
-              </button>
-            ))}
-          </div>
-        </div>
+      </div>
 
-        {/* Per-year stats */}
-        <div className="hobet-block">
+      {/* ── Map ──────────────────────────────────────────────────────────── */}
+      <div className="hobet-map-wrapper">
+        <DeckGL
+          controller
+          viewState={viewState}
+          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
+          layers={layers}
+          style={{ width: "100%", height: "100%" }}
+          useDevicePixels={1}
+          onError={(err: Error) => console.warn("DeckGL:", err.message)}
+        >
+          <MapLibre mapStyle={SATELLITE_STYLE as any} />
+        </DeckGL>
+
+        <MapPanel title="Controls" width={280}>
+          {/* Band selector */}
+          <MapPanelRow label="Layer">
+            <div style={{ display: "flex", gap: 4 }}>
+              {(["ndvi", "nbr"] as Band[]).map(b => (
+                <button
+                  key={b}
+                  className={`map-panel-btn${band === b ? " active" : ""}`}
+                  onClick={() => setBand(b)}
+                >
+                  {b.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </MapPanelRow>
+          <p className="hobet-band-hint" style={{ margin: 0 }}>
+            {band === "ndvi"
+              ? "Vegetation health — (NIR − Red) / (NIR + Red)"
+              : "Burn & disturbance recovery — (NIR − SWIR) / (NIR + SWIR)"}
+          </p>
+          <Legend band={band} />
+          <MapPanelDivider />
+
+          {/* Statistics */}
           <div className="hobet-stats-grid">
             <div className="hobet-stat-item">
               <span className="hobet-stat-label">Mean NDVI</span>
@@ -408,80 +435,23 @@ export default function HobetPage() {
             <div className="hobet-stat-item">
               <span className="hobet-stat-label">Landsat</span>
               <span className="hobet-stat-val">
-                {currentYear <= 1999
-                  ? "LS-5"
-                  : currentYear <= 2012
-                  ? "LS-5/7"
-                  : currentYear <= 2021
-                  ? "LS-8"
-                  : "LS-8/9"}
+                {currentYear <= 1999 ? "LS-5" : currentYear <= 2012 ? "LS-5/7" : currentYear <= 2021 ? "LS-8" : "LS-8/9"}
               </span>
             </div>
           </div>
-        </div>
 
-        {/* NDVI sparkline */}
-        {Object.keys(stats).length > 0 && (
-          <div className="hobet-block">
-            <p className="hobet-spark-title">Mean NDVI · 1985 – 2025</p>
-            <Sparkline stats={stats} years={years} currentYear={currentYear} />
-            <div className="hobet-spark-legend">
-              <span style={{ color: "#4A90D9" }}>▬</span> before&nbsp;
-              <span style={{ color: "#78C679" }}>▬</span> after
-            </div>
-          </div>
-        )}
-
-        {/* Key findings */}
-        <div className="hobet-block">
-          <p className="hobet-findings-title">Key Findings</p>
-          <ul className="hobet-findings">
-            <li>Mine footprint <span className="hobet-accent">−13.3%</span></li>
-            <li>
-              Forest cover <span className="hobet-accent">+3.3 pp</span>
-              <span className="hobet-dim"> (89.4 → 92.7%)</span>
-            </li>
-            <li>Active mining visible 1985 – 2008</li>
-            <li>NDVI recovery sustained post-2010</li>
-          </ul>
-          <p className="hobet-data-note">
-            {frameMeta && loadedCount < totalFrames
-              ? `Preloading frames… ${loadedCount}/${totalFrames}`
-              : "Microsoft Planetary Computer · Landsat C2 L2"}
-          </p>
-        </div>
-
-        {/* Opacity */}
-        <div className="hobet-block">
-          <label className="hobet-opacity-label">
-            <span>Layer opacity — {Math.round(opacity * 100)}%</span>
-            <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={opacity}
-              onChange={e => setOpacity(parseFloat(e.target.value))}
-              className="hobet-opacity-slider"
-            />
-          </label>
-        </div>
-
-      </div>
-
-      {/* ── Map ──────────────────────────────────────────────────────────── */}
-      <div className="hobet-map-wrapper">
-        <DeckGL
-          controller
-          viewState={viewState}
-          onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
-          layers={layers}
-          style={{ width: "100%", height: "100%" }}
-          useDevicePixels={1}
-          onError={(err: Error) => console.warn("DeckGL:", err.message)}
-        >
-          <MapLibre mapStyle={SATELLITE_STYLE as any} />
-        </DeckGL>
+          {Object.keys(stats).length > 0 && (
+            <>
+              <MapPanelDivider />
+              <p className="hobet-spark-title">Mean NDVI · 1985 – 2025</p>
+              <Sparkline stats={stats} years={years} currentYear={currentYear} />
+              <div className="hobet-spark-legend">
+                <span style={{ color: "#4A90D9" }}>▬</span> before&nbsp;
+                <span style={{ color: "#78C679" }}>▬</span> after
+              </div>
+            </>
+          )}
+        </MapPanel>
       </div>
 
     </div>
