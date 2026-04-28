@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, BitmapLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import MapPanel, { MapPanelRow, MapPanelDivider } from "@/components/map-panel";
@@ -305,12 +305,46 @@ export default function SDMPage() {
   const [tutorialCardIndex, setTutorialCardIndex] = useState<number>(0);
   const [flashcardSpecies, setFlashcardSpecies] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery]           = useState("");
+  const [showSuitability, setShowSuitability]   = useState(false);
+  const [showRange, setShowRange]               = useState(false);
+  const [suitabilityImage, setSuitabilityImage] = useState<ImageData | null>(null);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 800);
   }, []);
+
+  // ── Decode suitability .tif on first toggle-on ───────────────────────────
+  useEffect(() => {
+    if (!showSuitability || suitabilityImage) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { fromUrl } = await import("geotiff");
+        const tiff  = await fromUrl("/species-distribution-model/vanessa_cardui_suitability.tif");
+        const image = await tiff.getImage();
+        const rasters = await image.readRasters();
+        const values = rasters[0] as Float32Array;
+        const width  = image.getWidth();
+        const height = image.getHeight();
+        const buf = new Uint8ClampedArray(width * height * 4);
+        for (let i = 0; i < values.length; i++) {
+          const v = values[i];
+          if (isNaN(v) || v <= 0) { buf[i * 4 + 3] = 0; continue; }
+          // Yellow-green (low) → forest green (high)
+          buf[i * 4 + 0] = Math.round(255 - 221 * v);
+          buf[i * 4 + 1] = Math.round(200 -  61 * v);
+          buf[i * 4 + 2] = Math.round( 50 -  16 * v);
+          buf[i * 4 + 3] = Math.round(v * 210);
+        }
+        if (!cancelled) setSuitabilityImage(new ImageData(buf, width, height));
+      } catch (e) {
+        console.warn("Failed to decode suitability .tif:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showSuitability, suitabilityImage]);
 
   // ── Load flashcard species list ──────────────────────────────────────────
   useEffect(() => {
@@ -551,6 +585,30 @@ export default function SDMPage() {
       ? timeRange[1] - timeRange[0]
       : safeStep.days * 24 * 60 * 60 * 1000;
 
+  const sdmLayers = useMemo(() => {
+    const result = [];
+    if (showSuitability && suitabilityImage) {
+      result.push(new BitmapLayer({
+        id:      "vc-suitability",
+        image:   suitabilityImage,
+        bounds:  [-180, -90, 180, 90] as [number, number, number, number],
+        opacity: 0.75,
+      }));
+    }
+    if (showRange) {
+      result.push(new GeoJsonLayer({
+        id:                 "vc-range",
+        data:               "/species-distribution-model/vanessa_cardui_range.geojson",
+        stroked:            true,
+        filled:             true,
+        getFillColor:       [34, 139, 34, 40],
+        getLineColor:       [34, 200, 34, 200],
+        lineWidthMinPixels: 1.5,
+      }));
+    }
+    return result;
+  }, [showSuitability, showRange, suitabilityImage]);
+
   const layers = useMemo(() => [
     new ScatterplotLayer({
       id:             "occurrences",
@@ -684,7 +742,7 @@ export default function SDMPage() {
           controller={true}
           viewState={viewState}
           onViewStateChange={({ viewState: vs }: any) => setViewState(vs)}
-          layers={layers}
+          layers={[...sdmLayers, ...layers]}
           style={{ width: "100%", height: "100%" }}
           useDevicePixels={1}
           onError={(error: Error) => console.warn("DeckGL:", error.message)}
@@ -804,6 +862,25 @@ export default function SDMPage() {
                 onClick={() => setTerrainMode(m => !m)}
               >
                 {terrainMode ? "On" : "Off"}
+              </button>
+            </MapPanelRow>
+            <MapPanelDivider />
+            <MapPanelRow label="SDM Raster">
+              <button
+                className={`map-panel-btn${showSuitability ? " active" : ""}`}
+                onClick={() => setShowSuitability(s => !s)}
+                title="Habitat suitability raster (vanessa cardui)"
+              >
+                {showSuitability ? (suitabilityImage ? "On" : "…") : "Off"}
+              </button>
+            </MapPanelRow>
+            <MapPanelRow label="Habitat Range">
+              <button
+                className={`map-panel-btn${showRange ? " active" : ""}`}
+                onClick={() => setShowRange(r => !r)}
+                title="Predicted range polygon (vanessa cardui)"
+              >
+                {showRange ? "On" : "Off"}
               </button>
             </MapPanelRow>
             <MapPanelDivider />
