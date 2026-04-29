@@ -1983,6 +1983,38 @@ html.light .maplibregl-canvas {
 .map-panel-btn img           { height: 16px; width: auto; display: block; }
 .map-panel-btn svg           { height: 16px; width: 16px; display: block; }
 
+/* ── Suitability legend + opacity ─────────────────────────────────────────── */
+.sdm-suitability-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0 4px;
+}
+
+.sdm-legend {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sdm-legend-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.sdm-legend-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
 /* ==========================================================================
    RESPONSIVE
    ========================================================================== */

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { Source as MapSource, Layer as MapLayer } from "react-map-gl/maplibre";
 import { useTheme } from "next-themes";
-import { ScatterplotLayer, BitmapLayer, GeoJsonLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import MapPanel, { MapPanelRow, MapPanelDivider } from "@/components/map-panel";
@@ -307,7 +308,6 @@ export default function SDMPage() {
   const [searchQuery, setSearchQuery]           = useState("");
   const [showSuitability, setShowSuitability]   = useState(false);
   const [showRange, setShowRange]               = useState(false);
-  const [suitabilityImage, setSuitabilityImage] = useState<ImageData | null>(null);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -315,36 +315,6 @@ export default function SDMPage() {
     setTimeout(() => setCanvasReady(true), 800);
   }, []);
 
-  // ── Decode suitability .tif on first toggle-on ───────────────────────────
-  useEffect(() => {
-    if (!showSuitability || suitabilityImage) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { fromUrl } = await import("geotiff");
-        const tiff  = await fromUrl("/species-distribution-model/vanessa_cardui_suitability.tif");
-        const image = await tiff.getImage();
-        const rasters = await image.readRasters();
-        const values = rasters[0] as Float32Array;
-        const width  = image.getWidth();
-        const height = image.getHeight();
-        const buf = new Uint8ClampedArray(width * height * 4);
-        for (let i = 0; i < values.length; i++) {
-          const v = values[i];
-          if (isNaN(v) || v <= 0) { buf[i * 4 + 3] = 0; continue; }
-          // Yellow-green (low) → forest green (high)
-          buf[i * 4 + 0] = Math.round(255 - 221 * v);
-          buf[i * 4 + 1] = Math.round(200 -  61 * v);
-          buf[i * 4 + 2] = Math.round( 50 -  16 * v);
-          buf[i * 4 + 3] = Math.round(v * 210);
-        }
-        if (!cancelled) setSuitabilityImage(new ImageData(buf, width, height));
-      } catch (e) {
-        console.warn("Failed to decode suitability .tif:", e);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [showSuitability, suitabilityImage]);
 
   // ── Load flashcard species list ──────────────────────────────────────────
   useEffect(() => {
@@ -587,14 +557,6 @@ export default function SDMPage() {
 
   const sdmLayers = useMemo(() => {
     const result = [];
-    if (showSuitability && suitabilityImage) {
-      result.push(new BitmapLayer({
-        id:      "vc-suitability",
-        image:   suitabilityImage,
-        bounds:  [-180, -90, 180, 90] as [number, number, number, number],
-        opacity: 0.75,
-      }));
-    }
     if (showRange) {
       result.push(new GeoJsonLayer({
         id:                 "vc-range",
@@ -607,27 +569,30 @@ export default function SDMPage() {
       }));
     }
     return result;
-  }, [showSuitability, showRange, suitabilityImage]);
+  }, [showRange]);
 
-  const layers = useMemo(() => [
-    new ScatterplotLayer({
-      id:             "occurrences",
-      data,
-      getPosition:    (d: any) => d.position,
-      getFilterValue: (d: any) => d.timestamp,
-      filterRange:
-        safeStep.days === -1
-          ? [timeRange[0], currentTime]
-          : [currentTime - timeWindowMs, currentTime],
-      extensions:      [new DataFilterExtension({ filterSize: 1 })],
-      getFillColor:    resolvedTheme === "light" ? DOT_COLOR_LIGHT : DOT_COLOR_DARK,
-      getRadius:       3000,
-      radiusMinPixels: 1.5,
-      radiusMaxPixels: 4,
-      opacity:         0.75,
-      pickable:        false,
-    }),
-  ], [data, currentTime, timeWindowMs, timeRange, safeStep.days, resolvedTheme]);
+  const layers = useMemo(() => {
+    if (showSuitability) return [];
+    return [
+      new ScatterplotLayer({
+        id:             "occurrences",
+        data,
+        getPosition:    (d: any) => d.position,
+        getFilterValue: (d: any) => d.timestamp,
+        filterRange:
+          safeStep.days === -1
+            ? [timeRange[0], currentTime]
+            : [currentTime - timeWindowMs, currentTime],
+        extensions:      [new DataFilterExtension({ filterSize: 1 })],
+        getFillColor:    resolvedTheme === "light" ? DOT_COLOR_LIGHT : DOT_COLOR_DARK,
+        getRadius:       3000,
+        radiusMinPixels: 1.5,
+        radiusMaxPixels: 4,
+        opacity:         0.75,
+        pickable:        false,
+      }),
+    ];
+  }, [showSuitability, data, currentTime, timeWindowMs, timeRange, safeStep.days, resolvedTheme]);
 
   const yearStatuses = useMemo(() => {
     const yearsWithData = new Set(data.map((d) => new Date(d.timestamp).getFullYear()));
@@ -747,7 +712,17 @@ export default function SDMPage() {
           useDevicePixels={1}
           onError={(error: Error) => console.warn("DeckGL:", error.message)}
         >
-          <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle} />
+          <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle}>
+            {showSuitability && (
+              <MapSource
+                type="image"
+                url={`/species-distribution-model/vanessa_cardui_suitability_${resolvedTheme === "light" ? "light" : "dark"}.png`}
+                coordinates={[[-180, 85.051129], [180, 85.051129], [180, -85.051129], [-180, -85.051129]]}
+              >
+                <MapLayer id="vc-suitability" type="raster" paint={{ "raster-opacity": 1 }} />
+              </MapSource>
+            )}
+          </Map>
         </DeckGL>
         {loading && !selectedSpecies?.disabled && (
           <div className="sdm-map-loading">
@@ -865,15 +840,34 @@ export default function SDMPage() {
               </button>
             </MapPanelRow>
             <MapPanelDivider />
-            <MapPanelRow label="SDM Raster">
+            <MapPanelRow label="Habitat Suitability">
               <button
                 className={`map-panel-btn${showSuitability ? " active" : ""}`}
-                onClick={() => setShowSuitability(s => !s)}
-                title="Habitat suitability raster (vanessa cardui)"
+                onClick={() => setShowSuitability(s => {
+                  if (!s) setIsPlaying(false);
+                  return !s;
+                })}
+                title="Habitat suitability raster (Vanessa cardui)"
               >
-                {showSuitability ? (suitabilityImage ? "On" : "…") : "Off"}
+                {showSuitability ? "On" : "Off"}
               </button>
             </MapPanelRow>
+            {showSuitability && (
+              <div className="sdm-suitability-controls">
+                <div className="sdm-legend">
+                  <span className="sdm-legend-label">Low</span>
+                  <div
+                    className="sdm-legend-bar"
+                    style={{
+                      background: resolvedTheme === "light"
+                        ? "linear-gradient(to right, rgb(0,25,110), rgb(0,90,140), rgb(0,130,70), rgb(90,145,0), rgb(170,75,0))"
+                        : "linear-gradient(to right, rgb(13,8,135), rgb(126,3,168), rgb(204,71,120), rgb(248,149,64), rgb(240,249,33))",
+                    }}
+                  />
+                  <span className="sdm-legend-label">High</span>
+                </div>
+              </div>
+            )}
             <MapPanelRow label="Habitat Range">
               <button
                 className={`map-panel-btn${showRange ? " active" : ""}`}
