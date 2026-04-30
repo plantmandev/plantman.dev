@@ -16,12 +16,12 @@ const FEATURED: HighlightedProject[] = [
     githubHref: "https://github.com/plantmandev/species-distribution-model",
   },
   {
-    title: "Hobet Mine Analysis",
+    title: "Mine Reclamation Analysis",
     description: "40-year Landsat time series of mountaintop removal and post-mining vegetation recovery at the Hobet Mine, West Virginia. Scrub through annual NDVI and NBR composites from 1985 to 2025.",
     date: "December 8, 2023",
     tags: ["Remote Sensing", "GIS", "deck.gl", "Landsat", "Python"],
     video: "/thumbnails/hobit-mine-analysis-thumbnail.mp4",
-    demoHref: "/projects/hobet-mine-analysis",
+    demoHref: "/projects/mine-reclamation-analysis",
     githubHref: "https://github.com/plantmandev/hobet-mine-analysis",
   },
 ];
@@ -65,11 +65,11 @@ const CARDS: CardData[] = [
     tags: ["GIS", "PostGIS", "GBIF", "deck.gl", "scikit-learn"],
   },
   {
-    title: "Hobet Mine Analysis",
+    title: "Mine Reclamation Analysis",
     description: "40-year Landsat time series of mountaintop removal and post-mining vegetation recovery at the Hobet Mine, West Virginia. Scrub through annual NDVI and NBR composites from 1985 to 2025.",
     date: "December 8, 2023",
     githubHref: "https://github.com/plantmandev/hobet-mine-analysis",
-    postHref: "/projects/hobet-mine-analysis",
+    postHref: "/projects/mine-reclamation-analysis",
     tags: ["GIS", "deck.gl", "Python", "Remote Sensing", "Landsat"],
   },
 ];

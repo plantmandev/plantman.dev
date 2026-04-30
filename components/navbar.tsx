@@ -38,7 +38,7 @@ const navItems = [
 
 const projectLinks = [
   { label: "Species Distribution Model", href: "/projects/species-distribution-model" },
-  { label: "Hobet Mine Analysis",        href: "/projects/hobet-mine-analysis"        },
+  { label: "Mine Reclamation Analysis",   href: "/projects/mine-reclamation-analysis" },
 ];
 
 export function Navbar() {
@@ -62,8 +62,10 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const isAutohide = pathname.startsWith("/projects/");
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar${isAutohide ? " navbar--autohide" : ""}`}>
       <div className="navbar-inner">
 
         <Link href="/" aria-label="Home" className="navbar-logo">

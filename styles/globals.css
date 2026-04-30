@@ -52,9 +52,9 @@
   --map-panel-header-text-dim: #C8C8C8A6;
   --map-panel-header-text-hover: #E8E8E8;
   /* hobet accent — NDVI green */
-  --hobet-green:          #78C679;
-  --hobet-green-bg:       #0C1C0C;
-  --hobet-green-bg-hover: #142814;
+  --mra-green:          #78C679;
+  --mra-green-bg:       #0C1C0C;
+  --mra-green-bg-hover: #142814;
 }
 
 .light {
@@ -95,9 +95,9 @@
   --map-panel-header-text-dim: #C8B9A0A6;
   --map-panel-header-text-hover: #E6D7BE;
   /* hobet accent — muted green for amber background readability */
-  --hobet-green:          #3a7a38;
-  --hobet-green-bg:       rgba(58, 122, 56, 0.10);
-  --hobet-green-bg-hover: rgba(58, 122, 56, 0.18);
+  --mra-green:          #3a7a38;
+  --mra-green-bg:       rgba(58, 122, 56, 0.10);
+  --mra-green-bg-hover: rgba(58, 122, 56, 0.18);
 }
 
 /* ==========================================================================
@@ -132,8 +132,13 @@ main {
 
 /* Full-screen map pages must not scroll — content fills exactly */
 main:has(.sdm-root),
-main:has(.hobet-root) {
+main:has(.mra-root) {
   overflow: hidden;
+}
+
+/* When navbar is hidden on immersive pages, content fills from the very top */
+body:has(.navbar--autohide) main {
+  top: 0;
 }
 
 main > * {
@@ -195,6 +200,26 @@ button:focus-visible {
   right: 0;
   z-index: 100;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+/* Hidden-until-hover variant used on immersive project pages */
+.navbar--autohide {
+  transform: translateY(-100%);
+}
+
+/* Invisible trigger zone that sits at the top of the screen when navbar is hidden */
+.navbar--autohide::before {
+  content: '';
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  right: 0;
+  height: 18px;
+}
+
+.navbar--autohide:hover {
+  transform: translateY(0);
 }
 
 .navbar-inner {
@@ -1355,7 +1380,7 @@ html.light .maplibregl-canvas {
    HOBET — MINE ANALYSIS
    ========================================================================== */
 
-.hobet-root {
+.mra-root {
   display: flex;
   height: 100%;
   width: 100%;
@@ -1365,7 +1390,7 @@ html.light .maplibregl-canvas {
   font-size: 11px;
 }
 
-.hobet-loading {
+.mra-loading {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1373,13 +1398,13 @@ html.light .maplibregl-canvas {
   background: var(--background);
 }
 
-.hobet-loading-text {
+.mra-loading-text {
   color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.05em;
 }
 
-.hobet-left {
+.mra-left {
   width: 500px;
   min-width: 500px;
   height: 100%;
@@ -1394,20 +1419,60 @@ html.light .maplibregl-canvas {
   z-index: 1;
 }
 
-.hobet-block {
+.mra-block {
   padding: 14px 16px;
   background: var(--sdm-panel-bg);
   border-bottom: 1px solid var(--sdm-panel-border);
   flex-shrink: 0;
 }
 
-.hobet-map-wrapper {
+.mra-map-wrapper {
   flex: 1;
   position: relative;
   height: 100%;
 }
 
-.hobet-eyebrow {
+.mra-status-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.mra-status-label {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mra-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mra-status-value {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.mra-status-panel.active  .mra-status-dot   { background: #4CAF50; }
+.mra-status-panel.active  .mra-status-value { color: #4CAF50; }
+.mra-status-panel.abandoned .mra-status-dot   { background: #e74c3c; }
+.mra-status-panel.abandoned .mra-status-value { color: #e74c3c; }
+
+.mra-eyebrow {
   margin: 0 0 4px;
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -1415,7 +1480,7 @@ html.light .maplibregl-canvas {
   color: var(--muted);
 }
 
-.hobet-title {
+.mra-title {
   margin: 0 0 5px;
   font-size: 20px;
   font-weight: 700;
@@ -1425,20 +1490,108 @@ html.light .maplibregl-canvas {
   line-height: 1;
 }
 
-.hobet-subtitle {
+.mra-subtitle {
   margin: 0;
   font-size: 10px;
   color: var(--muted);
   line-height: 1.65;
 }
 
-.hobet-band-row {
+/* ── Mine selector dropdown ──────────────────────────────────────────────── */
+
+.mra-mine-selector-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.mra-mine-selector-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--foreground);
+}
+
+.mra-mine-selector-btn > span:first-child {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.mra-mine-chevron {
+  font-size: 9px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.mra-mine-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+  z-index: 200;
+}
+
+.mra-mine-option {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  gap: 2px;
+  transition: background 0.12s ease;
+}
+
+.mra-mine-option:last-child { border-bottom: none; }
+.mra-mine-option:hover { background: var(--btn-bg-hover); }
+
+.mra-mine-option > span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: 0.03em;
+}
+
+.mra-mine-option.active > span:first-child { font-weight: 700; }
+
+.mra-mine-option-loc {
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.mra-location {
+  margin: 0;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.mra-band-row {
   display: flex;
   gap: 6px;
   margin-bottom: 8px;
 }
 
-.hobet-band-btn {
+.mra-band-btn {
   flex: 1;
   padding: 7px 0;
   background: var(--btn-bg);
@@ -1453,52 +1606,67 @@ html.light .maplibregl-canvas {
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
 
-.hobet-band-btn:hover {
+.mra-band-btn:hover {
   color: var(--foreground);
   border-color: var(--btn-border-hover);
 }
 
-.hobet-band-active {
-  background: var(--hobet-green-bg);
-  border-color: var(--hobet-green);
-  color: var(--hobet-green);
+.mra-band-active {
+  background: var(--mra-green-bg);
+  border-color: var(--mra-green);
+  color: var(--mra-green);
 }
 
-.hobet-band-hint {
+.mra-band-hint {
   margin: 0 0 10px;
   font-size: 9.5px;
   color: var(--muted);
   line-height: 1.5;
 }
 
-.hobet-legend {
+.mra-band-info-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.mra-band-info-btn:hover,
+.mra-band-info-btn.open { color: var(--foreground); }
+
+.mra-legend {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.hobet-legend-label {
+.mra-legend-label {
   font-size: 9px;
   color: var(--muted);
   min-width: 26px;
   font-variant-numeric: tabular-nums;
 }
 
-.hobet-legend-bar {
+.mra-legend-bar {
   flex: 1;
   height: 10px;
   border-radius: 0;
   image-rendering: pixelated;
 }
 
-.hobet-year-row {
+.mra-year-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
 }
 
-.hobet-year-number {
+.mra-year-number {
   font-size: 34px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1507,7 +1675,7 @@ html.light .maplibregl-canvas {
   font-variant-numeric: tabular-nums;
 }
 
-.hobet-play-btn {
+.mra-play-btn {
   width: 52px;
   height: 52px;
   border: 1px solid var(--muted);
@@ -1523,10 +1691,10 @@ html.light .maplibregl-canvas {
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.hobet-play-btn:hover    { background: var(--foreground); color: var(--background); }
-.hobet-play-btn:disabled { border-color: var(--border); color: var(--border); cursor: default; }
+.mra-play-btn:hover    { background: var(--foreground); color: var(--background); }
+.mra-play-btn:disabled { border-color: var(--border); color: var(--border); cursor: default; }
 
-.hobet-scrubber {
+.mra-scrubber {
   height: 6px;
   background: var(--dark-gray);
   cursor: pointer;
@@ -1535,27 +1703,27 @@ html.light .maplibregl-canvas {
   outline: none;
 }
 
-.hobet-scrubber-fill {
+.mra-scrubber-fill {
   height: 100%;
   background: var(--light-gray);
   transition: width 0.1s linear;
   pointer-events: none;
 }
 
-.hobet-scrubber-labels {
+.mra-scrubber-labels {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
   font-size: 9px;
 }
 
-.hobet-year-grid {
+.mra-year-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 2px;
 }
 
-.hobet-year-cell {
+.mra-year-cell {
   padding: 4px 0;
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
@@ -1569,44 +1737,44 @@ html.light .maplibregl-canvas {
   font-variant-numeric: tabular-nums;
 }
 
-.hobet-year-cell:hover {
+.mra-year-cell:hover {
   background: var(--btn-bg-hover);
   color: var(--foreground);
 }
 
-.hobet-year-active {
-  background: var(--hobet-green-bg) !important;
-  border-color: var(--hobet-green) !important;
-  color: var(--hobet-green) !important;
+.mra-year-active {
+  background: var(--mra-green-bg) !important;
+  border-color: var(--mra-green) !important;
+  color: var(--mra-green) !important;
 }
 
-.hobet-stats-grid {
+.mra-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px 12px;
 }
 
-.hobet-stat-item {
+.mra-stat-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.hobet-stat-label {
+.mra-stat-label {
   font-size: 9px;
   color: var(--muted);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.hobet-stat-val {
+.mra-stat-val {
   font-size: 14px;
   color: var(--foreground);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.hobet-spark-title {
+.mra-spark-title {
   margin: 0 0 8px;
   font-size: 9px;
   letter-spacing: 0.07em;
@@ -1614,7 +1782,7 @@ html.light .maplibregl-canvas {
   color: var(--muted);
 }
 
-.hobet-spark-legend {
+.mra-spark-legend {
   margin-top: 6px;
   font-size: 9px;
   color: var(--muted);
@@ -1622,7 +1790,7 @@ html.light .maplibregl-canvas {
   gap: 10px;
 }
 
-.hobet-findings-title {
+.mra-findings-title {
   margin: 0 0 8px;
   font-size: 9px;
   letter-spacing: 0.08em;
@@ -1630,7 +1798,7 @@ html.light .maplibregl-canvas {
   color: var(--muted);
 }
 
-.hobet-findings {
+.mra-findings {
   margin: 0 0 10px;
   padding: 0 0 0 14px;
   list-style: disc;
@@ -1639,22 +1807,22 @@ html.light .maplibregl-canvas {
   font-size: 10px;
 }
 
-.hobet-findings li::marker { color: var(--border); }
+.mra-findings li::marker { color: var(--border); }
 
-.hobet-accent {
-  color: var(--hobet-green);
+.mra-accent {
+  color: var(--mra-green);
   font-weight: 700;
 }
 
-.hobet-dim { color: var(--light-gray); }
+.mra-dim { color: var(--light-gray); }
 
-.hobet-data-note {
+.mra-data-note {
   margin: 0;
   font-size: 9px;
   color: var(--muted);
 }
 
-.hobet-opacity-label {
+.mra-opacity-label {
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -1663,9 +1831,9 @@ html.light .maplibregl-canvas {
   cursor: default;
 }
 
-.hobet-opacity-slider {
+.mra-opacity-slider {
   width: 100%;
-  accent-color: var(--hobet-green);
+  accent-color: var(--mra-green);
   cursor: pointer;
 }
 
@@ -2026,12 +2194,12 @@ html.light .maplibregl-canvas {
   .ph-root              { max-width: 55%; }
 
   .sdm-left  { width: 400px; }
-  .hobet-left { width: 400px; min-width: 400px; }
+  .mra-left { width: 400px; min-width: 400px; }
 }
 
 @media (max-width: 1280px) {
   .sdm-left  { width: 340px; }
-  .hobet-left { width: 340px; min-width: 340px; }
+  .mra-left { width: 340px; min-width: 340px; }
 }
 
 @media (max-width: 1200px) {
