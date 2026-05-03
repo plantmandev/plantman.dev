@@ -142,9 +142,9 @@ body:has(.navbar--autohide) main {
   top: 0;
 }
 
-/* When the autohide navbar is revealed on hover, push content down to match */
+/* Compact navbar overlays the map — no content shift on reveal */
 body:has(.navbar--autohide:hover) main {
-  top: var(--bar-height);
+  top: 0;
 }
 
 main > * {
@@ -212,6 +212,8 @@ button:focus-visible {
 /* Hidden-until-hover variant used on immersive project pages */
 .navbar--autohide {
   transform: translateY(-100%);
+  background: transparent;
+  border-bottom: none;
 }
 
 /* Invisible trigger zone that sits at the top of the screen when navbar is hidden */
@@ -226,6 +228,19 @@ button:focus-visible {
 
 .navbar--autohide:hover {
   transform: translateY(0);
+}
+
+/* Compact pill: full navbar content, ~40% of viewport width, blank flanks */
+.navbar--autohide .navbar-inner {
+  width: 40%;
+  max-width: 400px;
+  position: relative;
+  background: var(--near-black);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  padding: 0 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
 
 .navbar-inner {

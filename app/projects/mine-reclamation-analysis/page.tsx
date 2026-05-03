@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { BitmapLayer } from "@deck.gl/layers";
-import { TileLayer } from "@deck.gl/geo-layers";
 import MapPanel, { MapPanelRow } from "@/components/map-panel";
 
 const DeckGL   = dynamic(() => import("@deck.gl/react").then(m => m.default), { ssr: false });
@@ -20,46 +19,21 @@ type Stat = {
   pct_valid: number;
 };
 
-type Manifest = {
-  bounds:      [number, number, number, number];
-  years:       number[];
-  zoom_levels: number[];
-};
-
 type FrameMeta = {
   bounds: [number, number, number, number];
-  zoom:   number;
   width:  number;
   height: number;
 };
 
 type Mine = {
-  id:           string;
+  slug:         string;
   label:        string;
   location:     string;
-  tilesPath:    string;
-  framesPath:   string;
+  bounds:       [number, number, number, number];
   initialView:  { longitude: number; latitude: number; zoom: number; pitch: number; bearing: number };
   milestoneYear?: number;
-  statusYear?:   number; // year operations ceased (Active → Abandoned)
+  statusYear?:   number;
 };
-
-// ── Mine registry ─────────────────────────────────────────────────────────────
-// Add new mines here. Each mine's tile data lives at tilesPath/ and frame
-// data at framesPath/. History text can be added via a per-mine JSON file.
-
-const MINES: Mine[] = [
-  {
-    id:          "hobet",
-    label:       "Hobet Mine",
-    location:    "Lincoln & Boone County, WV",
-    tilesPath:   "/tiles",
-    framesPath:  "/frames",
-    initialView: { longitude: -81.85, latitude: 38.0, zoom: 10, pitch: 0, bearing: 0 },
-    milestoneYear: 2015,
-    statusYear:    2012, // verify from research — approximate year mining ceased
-  },
-];
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -217,8 +191,10 @@ function Legend({ band }: { band: Band }) {
 
 export default function MineReclamationPage() {
   const [mounted,      setMounted]      = useState(false);
-  const [viewState,    setViewState]    = useState<any>(MINES[0].initialView);
-  const [selectedMine, setSelectedMine] = useState<Mine>(MINES[0]);
+  const [mines,        setMines]        = useState<Mine[]>([]);
+  const [minesLoaded,  setMinesLoaded]  = useState(false);
+  const [viewState,    setViewState]    = useState<any>({ longitude: -81.914, latitude: 37.996, zoom: 9, pitch: 0, bearing: 0 });
+  const [selectedMine, setSelectedMine] = useState<Mine | null>(null);
   const [mineOpen,     setMineOpen]     = useState(false);
   const [band,         setBand]         = useState<Band>("ndvi");
   const [bandInfo,     setBandInfo]     = useState<Band | null>(null);
@@ -234,6 +210,38 @@ export default function MineReclamationPage() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Fetch mine list from DB on mount
+  useEffect(() => {
+    fetch("/api/mines")
+      .then(r => r.json())
+      .then((data: any[]) => {
+        const list: Mine[] = data.map(m => ({
+          slug:         m.slug,
+          label:        m.mine_name,
+          location:     [m.county, m.state].filter(Boolean).join(", "),
+          bounds:       [m.bounds_west, m.bounds_south, m.bounds_east, m.bounds_north] as [number, number, number, number],
+          initialView:  {
+            longitude: (m.img_west != null && m.img_east  != null)
+              ? (m.img_west + m.img_east)   / 2
+              : m.lon  ?? -81.85,
+            latitude:  (m.img_south != null && m.img_north != null)
+              ? (m.img_south + m.img_north) / 2
+              : m.lat  ?? 38.0,
+            zoom: 9, pitch: 0, bearing: 0,
+          },
+          milestoneYear: m.operational_end ?? undefined,
+          statusYear:    m.operational_end ?? undefined,
+        }));
+        setMines(list);
+        if (list.length > 0) {
+          setSelectedMine(list[0]);
+          setViewState(list[0].initialView);
+        }
+        setMinesLoaded(true);
+      })
+      .catch(() => setMinesLoaded(true));
+  }, []);
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (mineDropRef.current && !mineDropRef.current.contains(e.target as Node)) {
@@ -246,6 +254,7 @@ export default function MineReclamationPage() {
 
   // Reload data when selected mine changes
   useEffect(() => {
+    if (!selectedMine) return;
     setYears([]);
     setStats({});
     setFrameMeta(null);
@@ -255,15 +264,12 @@ export default function MineReclamationPage() {
     setIsPlaying(false);
     setViewState(selectedMine.initialView);
 
-    Promise.all([
-      fetch(`${selectedMine.tilesPath}/manifest.json`).then(r => r.json()),
-      fetch(`${selectedMine.tilesPath}/stats.json`).then(r => r.json()),
-      fetch(`${selectedMine.framesPath}/meta.json`).then(r => r.json()).catch(() => null),
-    ])
-      .then(([manifest, statsData, meta]: [Manifest, Record<string, Stat>, FrameMeta | null]) => {
-        setYears(manifest.years);
-        setStats(statsData);
-        setFrameMeta(meta);
+    fetch(`/api/mines/${selectedMine.slug}/data`)
+      .then(r => r.json())
+      .then(({ years: y, stats: s, frameMeta: fm }) => {
+        setYears(y);
+        setStats(s);
+        setFrameMeta(fm);
       })
       .catch(() => {
         const fallback: number[] = [];
@@ -274,11 +280,11 @@ export default function MineReclamationPage() {
 
   // Preload all frame images; active band loads first
   useEffect(() => {
-    if (years.length === 0 || !frameMeta) return;
+    if (!selectedMine || years.length === 0 || !frameMeta) return;
     const bands: Band[] = band === "ndvi" ? ["ndvi", "nbr"] : ["nbr", "ndvi"];
     for (const b of bands) {
       for (const year of years) {
-        const key = `${selectedMine.id}-${b}-${year}`;
+        const key = `${selectedMine.slug}-${b}-${year}`;
         if (frameCache.current.has(key)) continue;
         const img = new Image();
         img.onload = () => {
@@ -286,7 +292,7 @@ export default function MineReclamationPage() {
           setLoadedCount(c => c + 1);
         };
         img.onerror = () => {};
-        img.src = `${selectedMine.framesPath}/${b}/${year}.png`;
+        img.src = `/api/mines/${selectedMine.slug}/frame/${year}/${b}`;
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,7 +300,7 @@ export default function MineReclamationPage() {
 
   // Year playback — pauses for 3 extra ticks at the milestone year
   useEffect(() => {
-    if (!isPlaying || years.length === 0) return;
+    if (!isPlaying || years.length === 0 || !selectedMine) return;
     let pauseCount = 0;
     const PAUSE_TICKS = 3;
     const { milestoneYear } = selectedMine;
@@ -316,37 +322,16 @@ export default function MineReclamationPage() {
   const totalFrames = years.length * 2;
 
   const layers = useMemo(() => {
-    if (frameMeta) {
-      const img = frameCache.current.get(`${selectedMine.id}-${band}-${currentYear}`);
-      if (img) {
-        const [west, south, east, north] = frameMeta.bounds;
-        return [
-          new BitmapLayer({
-            id: "frame-layer",
-            image: img,
-            bounds: [west, south, east, north] as [number, number, number, number],
-            opacity: 1,
-          }),
-        ];
-      }
-    }
+    if (!frameMeta || !selectedMine) return [];
+    const img = frameCache.current.get(`${selectedMine.slug}-${band}-${currentYear}`);
+    if (!img) return [];
+    const [west, south, east, north] = frameMeta.bounds;
     return [
-      new TileLayer({
-        id: `${selectedMine.id}-${band}-${currentYear}`,
-        data: `${selectedMine.tilesPath}/${band}/${currentYear}/{z}/{x}/{y}.png`,
-        minZoom: 9,
-        maxZoom: 12,
-        tileSize: 256,
+      new BitmapLayer({
+        id: "frame-layer",
+        image: img,
+        bounds: [west, south, east, north] as [number, number, number, number],
         opacity: 1,
-        renderSubLayers: (props: any) => {
-          const { west, south, east, north } = props.tile.bbox;
-          return new BitmapLayer({
-            ...props,
-            data: null,
-            image: props.data,
-            bounds: [west, south, east, north],
-          });
-        },
       }),
     ];
   // loadedCount is intentional — re-evaluate as frames arrive
@@ -354,13 +339,13 @@ export default function MineReclamationPage() {
   }, [band, currentYear, frameMeta, loadedCount, selectedMine]);
 
   const progressPct    = years.length > 1 ? (yearIdx / (years.length - 1)) * 100 : 0;
-  const milestoneIdx   = selectedMine.milestoneYear ? years.indexOf(selectedMine.milestoneYear) : -1;
+  const milestoneIdx   = selectedMine?.milestoneYear ? years.indexOf(selectedMine.milestoneYear) : -1;
   const milestonePct   = years.length > 1 && milestoneIdx >= 0
     ? (milestoneIdx / (years.length - 1)) * 100
     : null;
-  const isAbandoned    = selectedMine.statusYear != null && currentYear >= selectedMine.statusYear;
+  const isAbandoned    = selectedMine?.statusYear != null && currentYear >= selectedMine.statusYear;
 
-  if (!mounted || years.length === 0) {
+  if (!mounted || !minesLoaded || !selectedMine) {
     return (
       <div className="mra-loading">
         <span className="mra-loading-text">Initializing…</span>
@@ -388,10 +373,10 @@ export default function MineReclamationPage() {
             </button>
             {mineOpen && (
               <div className="mra-mine-dropdown">
-                {MINES.map(mine => (
+                {mines.map(mine => (
                   <button
-                    key={mine.id}
-                    className={`mra-mine-option${mine.id === selectedMine.id ? " active" : ""}`}
+                    key={mine.slug}
+                    className={`mra-mine-option${mine.slug === selectedMine.slug ? " active" : ""}`}
                     onClick={() => { setSelectedMine(mine); setMineOpen(false); }}
                   >
                     <span>{mine.label}</span>
@@ -411,9 +396,9 @@ export default function MineReclamationPage() {
               className="mra-play-btn"
               onClick={() => setIsPlaying(p => !p)}
               aria-label={isPlaying ? "Pause" : "Play"}
-              disabled={frameMeta !== null && loadedCount < totalFrames}
+              disabled={years.length === 0 || (frameMeta !== null && loadedCount < totalFrames)}
             >
-              {frameMeta !== null && loadedCount < totalFrames
+              {years.length === 0 || (frameMeta !== null && loadedCount < totalFrames)
                 ? <SpriteLoader size={26} />
                 : isPlaying ? "||" : "▶"}
             </button>
@@ -532,21 +517,21 @@ export default function MineReclamationPage() {
           <MapPanelRow label="Layer">
             <div style={{ display: "flex", gap: 6 }}>
               {(["ndvi", "nbr"] as Band[]).map(b => (
-                <div key={b} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                  <button
-                    className={`map-panel-btn${band === b ? " active" : ""}`}
-                    onClick={() => setBand(b)}
-                  >
-                    {b.toUpperCase()}
-                  </button>
-                  <button
+                <button
+                  key={b}
+                  className={`map-panel-btn${band === b ? " active" : ""}`}
+                  onClick={() => setBand(b)}
+                >
+                  {b.toUpperCase()}
+                  <span
                     className={`mra-band-info-btn${bandInfo === b ? " open" : ""}`}
-                    onClick={() => setBandInfo(cur => cur === b ? null : b)}
+                    role="button"
                     aria-label={`Info about ${b.toUpperCase()}`}
+                    onClick={e => { e.stopPropagation(); setBandInfo(cur => cur === b ? null : b); }}
                   >
                     ⓘ
-                  </button>
-                </div>
+                  </span>
+                </button>
               ))}
             </div>
           </MapPanelRow>
