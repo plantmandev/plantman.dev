@@ -66,6 +66,13 @@ const SATELLITE_STYLE = {
 };
 const TUTORIAL_KEY  = "sdm-tutorial-done";
 const PAGE_SIZE     = 30;
+
+const SDM_STEPS_DARK  = ["#0D0887","#3F0696","#7104A4","#981A98","#BB3883","#D6586C","#E97B53","#F7A03D","#F4CD2F","#F0F921"];
+const SDM_STEPS_LIGHT = ["#00196E","#00367B","#005389","#006775","#007956","#148537","#3C8C17","#638900","#876A00","#AA4B00"];
+function buildSteppedGradient(steps: string[]): string {
+  const pct = 100 / steps.length;
+  return `linear-gradient(to right, ${steps.map((c, i) => `${c} ${(i * pct).toFixed(1)}% ${((i + 1) * pct).toFixed(1)}%`).join(", ")})`;
+}
 const DOT_COLOR_DARK:  [number, number, number] = [242, 242, 242]; // --off-white
 const DOT_COLOR_LIGHT: [number, number, number] = [122,  79,  53]; // --muted warm brown
 
@@ -735,6 +742,17 @@ export default function SDMPage() {
           </div>
         )}
 
+        {showSuitability && (
+          <div className="sdm-suit-legend">
+            <p className="sdm-suit-legend-title">Habitat Suitability</p>
+            <div className="sdm-legend">
+              <span className="sdm-legend-label">Low</span>
+              <div className="sdm-legend-bar" style={{ background: buildSteppedGradient(resolvedTheme === "light" ? SDM_STEPS_LIGHT : SDM_STEPS_DARK) }} />
+              <span className="sdm-legend-label">High</span>
+            </div>
+          </div>
+        )}
+
         {/* Panel — bottom-right of map */}
         <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100 }}>
           <MapPanel
@@ -852,22 +870,6 @@ export default function SDMPage() {
                 {showSuitability ? "On" : "Off"}
               </button>
             </MapPanelRow>
-            {showSuitability && (
-              <div className="sdm-suitability-controls">
-                <div className="sdm-legend">
-                  <span className="sdm-legend-label">Low</span>
-                  <div
-                    className="sdm-legend-bar"
-                    style={{
-                      background: resolvedTheme === "light"
-                        ? "linear-gradient(to right, rgb(0,25,110), rgb(0,90,140), rgb(0,130,70), rgb(90,145,0), rgb(170,75,0))"
-                        : "linear-gradient(to right, rgb(13,8,135), rgb(126,3,168), rgb(204,71,120), rgb(248,149,64), rgb(240,249,33))",
-                    }}
-                  />
-                  <span className="sdm-legend-label">High</span>
-                </div>
-              </div>
-            )}
             <MapPanelRow label="Habitat Range">
               <button
                 className={`map-panel-btn${showRange ? " active" : ""}`}

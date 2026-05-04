@@ -46,8 +46,8 @@
   --sdm-panel-bg:              var(--panel-bg);
   --sdm-panel-border:          var(--border);
   /* map-panel header */
-  --map-panel-header-bg:       #2A2622;
-  --map-panel-header-bg-hover: #3A3430;
+  --map-panel-header-bg:       #2A2A2A;
+  --map-panel-header-bg-hover: #383838;
   --map-panel-header-text:     #C8C8C8;
   --map-panel-header-text-dim: #C8C8C8A6;
   --map-panel-header-text-hover: #E8E8E8;
@@ -2172,12 +2172,25 @@ html.light .maplibregl-canvas {
 .map-panel-btn img           { height: 16px; width: auto; display: block; }
 .map-panel-btn svg           { height: 16px; width: 16px; display: block; }
 
-/* ── Suitability legend + opacity ─────────────────────────────────────────── */
-.sdm-suitability-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 2px 0 4px;
+/* ── Suitability legend — standalone bottom-left ─────────────────────────── */
+.sdm-suit-legend {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 100;
+  width: 190px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  padding: 8px 10px 10px;
+}
+
+.sdm-suit-legend-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 6px;
 }
 
 .sdm-legend {
@@ -2189,7 +2202,8 @@ html.light .maplibregl-canvas {
 .sdm-legend-bar {
   flex: 1;
   height: 10px;
-  border-radius: 3px;
+  border-radius: 0;
+  image-rendering: pixelated;
   border: 1px solid var(--border);
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { BitmapLayer } from "@deck.gl/layers";
 import MapPanel, { MapPanelRow } from "@/components/map-panel";
@@ -37,6 +37,8 @@ type Mine = {
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+const TUTORIAL_KEY = "mra-tutorial-done";
 
 const SATELLITE_STYLE = {
   version: 8,
@@ -208,9 +210,13 @@ export default function MineReclamationPage() {
   const [stats,        setStats]        = useState<Record<string, Stat>>({});
   const [frameMeta,    setFrameMeta]    = useState<FrameMeta | null>(null);
   const [loadedCount,  setLoadedCount]  = useState(0);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
 
-  const frameCache  = useRef<Map<string, HTMLImageElement>>(new Map());
-  const mineDropRef = useRef<HTMLDivElement>(null);
+  const frameCache           = useRef<Map<string, HTMLImageElement>>(new Map());
+  const mineDropRef          = useRef<HTMLDivElement>(null);
+  const tutorialInitialized  = useRef(false);
+
+  const totalFrames = years.length * 2;
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -246,6 +252,12 @@ export default function MineReclamationPage() {
       })
       .catch(() => setMinesLoaded(true));
   }, []);
+
+  useEffect(() => {
+    if (tutorialInitialized.current || totalFrames === 0 || loadedCount < totalFrames) return;
+    tutorialInitialized.current = true;
+    if (!localStorage.getItem(TUTORIAL_KEY)) setTutorialStep(1);
+  }, [loadedCount, totalFrames]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -324,14 +336,16 @@ export default function MineReclamationPage() {
 
   const currentYear = years[yearIdx] ?? 1985;
   const currentStat = stats[String(currentYear)];
-  const totalFrames = years.length * 2;
 
-  // Autoplay once all frames are cached
+  // Autoplay once all frames are cached.
+  // New users: blocked until they complete step 3 (localStorage not yet set).
+  // Returning users: fires immediately when frames load.
+  // Tutorial completion (step 3 → null): tutorialStep dep re-triggers this.
   useEffect(() => {
-    if (totalFrames > 0 && loadedCount >= totalFrames) {
+    if (totalFrames > 0 && loadedCount >= totalFrames && tutorialStep === null && !!localStorage.getItem(TUTORIAL_KEY)) {
       setIsPlaying(true);
     }
-  }, [loadedCount, totalFrames]);
+  }, [loadedCount, totalFrames, tutorialStep]);
 
   const layers = useMemo(() => {
     if (!frameMeta || !selectedMine) return [];
@@ -357,6 +371,19 @@ export default function MineReclamationPage() {
     : null;
   const isAbandoned    = selectedMine?.statusYear != null && currentYear >= selectedMine.statusYear;
 
+  const advanceTutorial = useCallback((fromStep: number) => {
+    setTutorialStep(current => {
+      if (current !== fromStep) return current;
+      if (fromStep >= 3) { localStorage.setItem(TUTORIAL_KEY, "1"); return null; }
+      return fromStep + 1;
+    });
+  }, []);
+
+  const skipTutorial = useCallback(() => {
+    setTutorialStep(null);
+    localStorage.setItem(TUTORIAL_KEY, "1");
+  }, []);
+
   if (!mounted || !minesLoaded || !selectedMine) {
     return (
       <div className="mra-loading">
@@ -373,7 +400,7 @@ export default function MineReclamationPage() {
 
         {/* Mine selector */}
         <div className="mra-block" style={{ paddingTop: 28 }}>
-          <div className="mra-mine-selector-wrap" ref={mineDropRef}>
+          <div className={`mra-mine-selector-wrap${tutorialStep === 1 ? " sdm-tutorial-target" : ""}`} ref={mineDropRef}>
             <button
               className="mra-mine-selector-btn"
               onClick={() => setMineOpen(o => !o)}
@@ -383,13 +410,14 @@ export default function MineReclamationPage() {
               <span>{selectedMine.label}</span>
               <span className="mra-mine-chevron">{mineOpen ? "▴" : "▾"}</span>
             </button>
+            {tutorialStep === 1 && <div className="sdm-tutorial-tip sdm-tutorial-tip--below">select a mine</div>}
             {mineOpen && (
               <div className="mra-mine-dropdown">
                 {mines.map(mine => (
                   <button
                     key={mine.slug}
                     className={`mra-mine-option${mine.slug === selectedMine.slug ? " active" : ""}`}
-                    onClick={() => { setSelectedMine(mine); setMineOpen(false); }}
+                    onClick={() => { setSelectedMine(mine); setMineOpen(false); advanceTutorial(1); }}
                   >
                     <span>{mine.label}</span>
                     <span className="mra-mine-option-loc">{mine.location}</span>
@@ -405,14 +433,15 @@ export default function MineReclamationPage() {
         <div className="mra-block">
           <div className="mra-year-row">
             <button
-              className="mra-play-btn"
-              onClick={() => setIsPlaying(p => !p)}
+              className={`mra-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
+              onClick={() => { setIsPlaying(p => !p); advanceTutorial(3); }}
               aria-label={isPlaying ? "Pause" : "Play"}
               disabled={years.length === 0 || (frameMeta !== null && loadedCount < totalFrames)}
             >
               {years.length === 0 || (frameMeta !== null && loadedCount < totalFrames)
                 ? <SpriteLoader size={26} />
                 : isPlaying ? "||" : "▶"}
+              {tutorialStep === 3 && <div className="sdm-tutorial-tip">press play</div>}
             </button>
             <span className="mra-year-number">{currentYear}</span>
           </div>
@@ -533,12 +562,12 @@ export default function MineReclamationPage() {
 
         <MapPanel title="Controls" width={280}>
           <MapPanelRow label="Layer">
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 6, position: "relative" }} className={tutorialStep === 2 ? "sdm-tutorial-target" : undefined}>
               {(["ndvi", "nbr"] as Band[]).map(b => (
                 <button
                   key={b}
                   className={`map-panel-btn${band === b ? " active" : ""}`}
-                  onClick={() => setBand(b)}
+                  onClick={() => { setBand(b); advanceTutorial(2); }}
                 >
                   {b.toUpperCase()}
                   <span
@@ -551,6 +580,7 @@ export default function MineReclamationPage() {
                   </span>
                 </button>
               ))}
+              {tutorialStep === 2 && <div className="sdm-tutorial-tip">choose a band</div>}
             </div>
           </MapPanelRow>
           {bandInfo !== null && (
@@ -563,6 +593,10 @@ export default function MineReclamationPage() {
           <Legend band={band} />
         </MapPanel>
       </div>
+
+      {tutorialStep !== null && (
+        <button className="sdm-tutorial-skip" onClick={skipTutorial}>skip tutorial</button>
+      )}
 
     </div>
   );
