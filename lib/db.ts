@@ -1,37 +1,23 @@
 import { Pool } from 'pg';
 
 declare global {
-  var _pgPool: Pool | undefined;
+  var _pgPool:    Pool | undefined;
+  var _pgPoolSdm: Pool | undefined;
 }
 
 export function getPool(): Pool {
   if (!global._pgPool) {
     const connectionString = process.env.DATABASE_URL;
-
-    const shared = {
-      // Neon recommends 1-3 connections per serverless function instance.
-      // Higher values exhaust the connection limit when multiple visitors hit the site.
-      max:                     parseInt(process.env.DATABASE_MAX_CONNECTIONS || '3'),
-      idleTimeoutMillis:       30000,
-      // 10 s gives Neon's cold-start enough runway to wake up.
-      connectionTimeoutMillis: 10000,
-    };
-
     if (connectionString) {
-      const isNeon = connectionString.includes('neon.tech');
-      // channel_binding=require is incompatible with rejectUnauthorized:false —
-      // strip it so pg can complete the SCRAM handshake over plain SSL.
-      const safeUrl = connectionString
-        .replace(/[&?]channel_binding=[^&]*/g, '')
-        .replace(/\?&/, '?');
-      console.log('🔌 DB connecting to:', isNeon ? 'Neon' : 'Custom URL');
-      global._pgPool = new Pool({
-        connectionString: safeUrl,
-        ssl: isNeon ? { rejectUnauthorized: false } : false,
-        ...shared,
-      });
+      global._pgPool = makePool(connectionString, 'mines');
     } else {
-      console.log('🔌 DB connecting to:', process.env.DATABASE_HOST || 'localhost');
+      // Fall back to individual host/port env vars for local dev
+      const shared = {
+        max:                     parseInt(process.env.DATABASE_MAX_CONNECTIONS || '3'),
+        idleTimeoutMillis:       30000,
+        connectionTimeoutMillis: 10000,
+      };
+      console.log('🔌 DB [mines] connecting to:', process.env.DATABASE_HOST || 'localhost');
       global._pgPool = new Pool({
         host:     process.env.DATABASE_HOST     || 'localhost',
         port:     parseInt(process.env.DATABASE_PORT || '5432'),
@@ -40,13 +26,9 @@ export function getPool(): Pool {
         password: process.env.DATABASE_PASSWORD,
         ...shared,
       });
+      global._pgPool.on('error', err => console.error('Unexpected DB pool error [mines]:', err));
     }
-
-    global._pgPool.on('error', (err) => {
-      console.error('Unexpected DB pool error:', err);
-    });
   }
-
   return global._pgPool;
 }
 
@@ -65,6 +47,53 @@ function isRetryable(err: unknown): boolean {
     msg.includes('terminating') ||
     msg.includes('econnreset')
   );
+}
+
+function makePool(connectionString: string | undefined, label: string): Pool {
+  const shared = {
+    max:                     parseInt(process.env.DATABASE_MAX_CONNECTIONS || '3'),
+    idleTimeoutMillis:       30000,
+    connectionTimeoutMillis: 10000,
+  };
+  if (connectionString) {
+    const isNeon  = connectionString.includes('neon.tech');
+    const safeUrl = connectionString
+      .replace(/[&?]channel_binding=[^&]*/g, '')
+      .replace(/\?&/, '?');
+    console.log(`🔌 DB [${label}] connecting to:`, isNeon ? 'Neon' : 'Custom URL');
+    const pool = new Pool({ connectionString: safeUrl, ssl: isNeon ? { rejectUnauthorized: false } : false, ...shared });
+    pool.on('error', err => console.error(`Unexpected DB pool error [${label}]:`, err));
+    return pool;
+  }
+  throw new Error(`No connection string provided for DB pool [${label}]`);
+}
+
+export function getSdmPool(): Pool {
+  if (!global._pgPoolSdm) {
+    const url = process.env.SDM_DATABASE_URL;
+    if (!url) throw new Error('SDM_DATABASE_URL is not set');
+    global._pgPoolSdm = makePool(url, 'sdm');
+  }
+  return global._pgPoolSdm;
+}
+
+export async function querysdm<T = any>(text: string, params?: any[]): Promise<T[]> {
+  const pool = getSdmPool();
+  const MAX_ATTEMPTS = 3;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, 300 * Math.pow(2, attempt - 1)));
+      console.warn(`SDM DB retry attempt ${attempt}:`, (lastErr as any)?.message);
+    }
+    try {
+      return (await pool.query(text, params)).rows;
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err)) throw err;
+    }
+  }
+  throw lastErr;
 }
 
 export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {

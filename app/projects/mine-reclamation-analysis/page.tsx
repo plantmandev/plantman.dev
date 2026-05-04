@@ -26,13 +26,14 @@ type FrameMeta = {
 };
 
 type Mine = {
-  slug:         string;
-  label:        string;
-  location:     string;
-  bounds:       [number, number, number, number];
-  initialView:  { longitude: number; latitude: number; zoom: number; pitch: number; bearing: number };
-  milestoneYear?: number;
-  statusYear?:   number;
+  slug:              string;
+  label:             string;
+  location:          string;
+  bounds:            [number, number, number, number];
+  initialView:       { longitude: number; latitude: number; zoom: number; pitch: number; bearing: number };
+  milestoneYear?:    number;
+  statusYear?:       number;
+  operationalStart?: number;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -81,15 +82,18 @@ function Sparkline({
   years,
   currentYear,
   milestoneYear,
+  band,
 }: {
   stats: Record<string, Stat>;
   years: number[];
   currentYear: number;
   milestoneYear?: number;
+  band: Band;
 }) {
   const W = 252, H = 52;
+  const color = band === "ndvi" ? "#78C679" : "#E8A838";
 
-  const values = years.map(y => stats[String(y)]?.mean_ndvi ?? null);
+  const values = years.map(y => stats[String(y)]?.[band === "ndvi" ? "mean_ndvi" : "mean_nbr"] ?? null);
   const valid  = values.filter((v): v is number => v !== null);
   if (valid.length < 2) return null;
 
@@ -103,7 +107,7 @@ function Sparkline({
   const segments: string[][] = [];
   let seg: string[] = [];
   years.forEach((yr, i) => {
-    const v = stats[String(yr)]?.mean_ndvi;
+    const v = values[i];
     if (v != null) {
       seg.push(`${xp(i).toFixed(1)},${yp(v).toFixed(1)}`);
     } else if (seg.length) {
@@ -114,7 +118,7 @@ function Sparkline({
   if (seg.length) segments.push(seg);
 
   const curIdx = years.indexOf(currentYear);
-  const curVal = stats[String(currentYear)]?.mean_ndvi;
+  const curVal = values[curIdx];
 
   const milestoneIdx = milestoneYear ? years.indexOf(milestoneYear) : -1;
 
@@ -131,7 +135,7 @@ function Sparkline({
         <rect
           x={xp(milestoneIdx)} y={0}
           width={xp(years.length - 1) - xp(milestoneIdx)} height={H}
-          fill="#78C679" opacity={0.12}
+          fill={color} opacity={0.12}
         />
       )}
       {segments.map((pts, i) => (
@@ -139,7 +143,7 @@ function Sparkline({
           key={i}
           points={pts.join(" ")}
           fill="none"
-          stroke="#78C679"
+          stroke={color}
           strokeWidth={1.5}
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -158,7 +162,7 @@ function Sparkline({
       {curIdx >= 0 && curVal != null && (
         <>
           <line x1={xp(curIdx)} x2={xp(curIdx)} y1={0} y2={H} stroke="currentColor" strokeWidth={0.5} opacity={0.15} />
-          <circle cx={xp(curIdx)} cy={yp(curVal)} r={3} fill="var(--background)" stroke="#78C679" strokeWidth={1.5} />
+          <circle cx={xp(curIdx)} cy={yp(curVal)} r={3} fill="var(--background)" stroke={color} strokeWidth={1.5} />
         </>
       )}
     </svg>
@@ -229,8 +233,9 @@ export default function MineReclamationPage() {
               : m.lat  ?? 38.0,
             zoom: 9, pitch: 0, bearing: 0,
           },
-          milestoneYear: m.operational_end ?? undefined,
-          statusYear:    m.operational_end ?? undefined,
+          milestoneYear:    m.operational_end   ?? undefined,
+          statusYear:       m.operational_end   ?? undefined,
+          operationalStart: m.operational_start ?? undefined,
         }));
         setMines(list);
         if (list.length > 0) {
@@ -320,6 +325,13 @@ export default function MineReclamationPage() {
   const currentYear = years[yearIdx] ?? 1985;
   const currentStat = stats[String(currentYear)];
   const totalFrames = years.length * 2;
+
+  // Autoplay once all frames are cached
+  useEffect(() => {
+    if (totalFrames > 0 && loadedCount >= totalFrames) {
+      setIsPlaying(true);
+    }
+  }, [loadedCount, totalFrames]);
 
   const layers = useMemo(() => {
     if (!frameMeta || !selectedMine) return [];
@@ -478,11 +490,11 @@ export default function MineReclamationPage() {
         {/* Sparkline */}
         {Object.keys(stats).length > 0 && (
           <div className="mra-block">
-            <p className="mra-spark-title">Mean NDVI · {years[0]} – {years[years.length - 1]}</p>
-            <Sparkline stats={stats} years={years} currentYear={currentYear} milestoneYear={selectedMine.milestoneYear} />
+            <p className="mra-spark-title">Mean {band.toUpperCase()} · {years[0]} – {years[years.length - 1]}</p>
+            <Sparkline stats={stats} years={years} currentYear={currentYear} milestoneYear={selectedMine.milestoneYear} band={band} />
             <div className="mra-spark-legend">
               <span style={{ color: "#4A90D9" }}>▬</span> before&nbsp;
-              <span style={{ color: "#78C679" }}>▬</span> after
+              <span style={{ color: band === "ndvi" ? "#78C679" : "#E8A838" }}>▬</span> after
             </div>
           </div>
         )}
@@ -502,6 +514,12 @@ export default function MineReclamationPage() {
         >
           <MapLibre mapStyle={SATELLITE_STYLE as any} />
         </DeckGL>
+
+        {years.length === 0 || (frameMeta !== null && loadedCount < totalFrames) ? (
+          <div className="sdm-map-loading">
+            <span className="sdm-map-loading-text">loading</span>
+          </div>
+        ) : null}
 
         {selectedMine.statusYear != null && (
           <div className={`mra-status-panel${isAbandoned ? " abandoned" : " active"}`}>
