@@ -216,14 +216,42 @@ button:focus-visible {
   border-bottom: none;
 }
 
-/* Invisible trigger zone that sits at the top of the screen when navbar is hidden */
+/* Invisible trigger zone — extends just past the hint tick */
 .navbar--autohide::before {
   content: '';
   position: absolute;
-  bottom: -18px;
+  bottom: -20px;
   left: 0;
   right: 0;
-  height: 18px;
+  height: 20px;
+}
+
+/* Thin tick visible at the top edge to hint the navbar is accessible */
+.navbar--autohide::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 2px;
+  background: var(--muted);
+  pointer-events: none;
+  animation: navbar-hint-pulse 3s ease-in-out infinite;
+}
+
+/* On hover: stop the animation and fade out. On unhover: animation restarts
+   from opacity 0 (the 0% keyframe), giving a natural fade-in. */
+.navbar--autohide:hover::after {
+  animation: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+@keyframes navbar-hint-pulse {
+  0%         { opacity: 0;    }
+  15%, 85%   { opacity: 0.85; }
+  100%       { opacity: 0;    }
 }
 
 .navbar--autohide:hover {

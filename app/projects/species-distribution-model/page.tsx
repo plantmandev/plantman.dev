@@ -554,6 +554,15 @@ export default function SDMPage() {
     advanceTutorial(1);
   }, [advanceTutorial]);
 
+  // ── Reset habitat overlays when switching to a species without raster data ──
+  const hasHabitatData = selectedSpecies?.scientificName.toLowerCase() === "vanessa cardui";
+  useEffect(() => {
+    if (!hasHabitatData) {
+      setShowSuitability(false);
+      setShowRange(false);
+    }
+  }, [hasHabitatData]);
+
   // ── Derived values (must be above early return — Rules of Hooks) ──────────
   const safeStep = selectedStep ?? STEP_OPTIONS[2];
 
@@ -720,7 +729,7 @@ export default function SDMPage() {
           onError={(error: Error) => console.warn("DeckGL:", error.message)}
         >
           <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle}>
-            {showSuitability && (
+            {hasHabitatData && showSuitability && (
               <MapSource
                 type="image"
                 url={`/species-distribution-model/vanessa_cardui_suitability_${resolvedTheme === "light" ? "light" : "dark"}.png`}
@@ -742,7 +751,7 @@ export default function SDMPage() {
           </div>
         )}
 
-        {showSuitability && (
+        {hasHabitatData && showSuitability && (
           <div className="sdm-suit-legend">
             <p className="sdm-suit-legend-title">Habitat Suitability</p>
             <div className="sdm-legend">
@@ -858,27 +867,31 @@ export default function SDMPage() {
               </button>
             </MapPanelRow>
             <MapPanelDivider />
-            <MapPanelRow label="Habitat Suitability">
-              <button
-                className={`map-panel-btn${showSuitability ? " active" : ""}`}
-                onClick={() => setShowSuitability(s => {
-                  if (!s) setIsPlaying(false);
-                  return !s;
-                })}
-                title="Habitat suitability raster (Vanessa cardui)"
-              >
-                {showSuitability ? "On" : "Off"}
-              </button>
-            </MapPanelRow>
-            <MapPanelRow label="Habitat Range">
-              <button
-                className={`map-panel-btn${showRange ? " active" : ""}`}
-                onClick={() => setShowRange(r => !r)}
-                title="Predicted range polygon (vanessa cardui)"
-              >
-                {showRange ? "On" : "Off"}
-              </button>
-            </MapPanelRow>
+            {hasHabitatData && (
+              <>
+                <MapPanelRow label="Habitat Suitability">
+                  <button
+                    className={`map-panel-btn${showSuitability ? " active" : ""}`}
+                    onClick={() => setShowSuitability(s => {
+                      if (!s) setIsPlaying(false);
+                      return !s;
+                    })}
+                    title="Habitat suitability raster (Vanessa cardui)"
+                  >
+                    {showSuitability ? "On" : "Off"}
+                  </button>
+                </MapPanelRow>
+                <MapPanelRow label="Habitat Range">
+                  <button
+                    className={`map-panel-btn${showRange ? " active" : ""}`}
+                    onClick={() => setShowRange(r => !r)}
+                    title="Predicted range polygon (Vanessa cardui)"
+                  >
+                    {showRange ? "On" : "Off"}
+                  </button>
+                </MapPanelRow>
+              </>
+            )}
             <MapPanelDivider />
             <MapPanelRow label="Flashcards">
               <a className="map-panel-btn" href="/flashcards/Lepidoptera.apkg" download>
