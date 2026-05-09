@@ -1,9 +1,8 @@
 "use client";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Source as MapSource, Layer as MapLayer } from "react-map-gl/maplibre";
 import { useTheme } from "next-themes";
-import { ScatterplotLayer, GeoJsonLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, GeoJsonLayer, BitmapLayer } from "@deck.gl/layers";
 import { DataFilterExtension } from "@deck.gl/extensions";
 import { WebMercatorViewport, FlyToInterpolator } from "@deck.gl/core";
 import MapPanel, { MapPanelRow, MapPanelDivider } from "@/components/map-panel";
@@ -110,6 +109,7 @@ type Species = {
   actualObs?: number;
   status?: string;
   category?: string;
+  hasSdm?: boolean;
   disabled?: boolean;
 };
 
@@ -315,6 +315,7 @@ export default function SDMPage() {
   const [searchQuery, setSearchQuery]           = useState("");
   const [showSuitability, setShowSuitability]   = useState(false);
   const [showRange, setShowRange]               = useState(false);
+  const [suitabilityImage, setSuitabilityImage] = useState<ImageData | null>(null);
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -322,6 +323,41 @@ export default function SDMPage() {
     setTimeout(() => setCanvasReady(true), 800);
   }, []);
 
+  // ── Reset SDM raster when species changes ───────────────────────────────
+  useEffect(() => {
+    setSuitabilityImage(null);
+  }, [selectedSpecies]);
+
+  // ── Decode suitability .tif for the selected species ─────────────────────
+  useEffect(() => {
+    if (!showSuitability || !selectedSpecies?.hasSdm) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { fromUrl } = await import("geotiff");
+        const url   = `/api/sdm/${encodeURIComponent(selectedSpecies.scientificName)}/suitability`;
+        const tiff  = await fromUrl(url);
+        const image = await tiff.getImage();
+        const rasters = await image.readRasters();
+        const values = rasters[0] as Float32Array;
+        const width  = image.getWidth();
+        const height = image.getHeight();
+        const buf = new Uint8ClampedArray(width * height * 4);
+        for (let i = 0; i < values.length; i++) {
+          const v = values[i];
+          if (isNaN(v) || v <= 0) { buf[i * 4 + 3] = 0; continue; }
+          buf[i * 4 + 0] = Math.round(255 - 221 * v);
+          buf[i * 4 + 1] = Math.round(200 -  61 * v);
+          buf[i * 4 + 2] = Math.round( 50 -  16 * v);
+          buf[i * 4 + 3] = Math.round(v * 210);
+        }
+        if (!cancelled) setSuitabilityImage(new ImageData(buf, width, height));
+      } catch (e) {
+        console.warn("Failed to decode suitability .tif:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showSuitability, selectedSpecies]);
 
   // ── Load flashcard species list ──────────────────────────────────────────
   useEffect(() => {
@@ -404,6 +440,7 @@ export default function SDMPage() {
             actualObs:      Number.isFinite(obsRaw) ? Math.round(obsRaw) : undefined,
             status:         item.status ?? "",
             category:       item.category ?? "lepidoptera",
+            hasSdm:         item.has_sdm ?? false,
             disabled:       item.disabled ?? false,
           };
         });
@@ -555,7 +592,7 @@ export default function SDMPage() {
   }, [advanceTutorial]);
 
   // ── Reset habitat overlays when switching to a species without raster data ──
-  const hasHabitatData = selectedSpecies?.scientificName.toLowerCase() === "vanessa cardui";
+  const hasHabitatData = selectedSpecies?.hasSdm ?? false;
   useEffect(() => {
     if (!hasHabitatData) {
       setShowSuitability(false);
@@ -573,10 +610,18 @@ export default function SDMPage() {
 
   const sdmLayers = useMemo(() => {
     const result = [];
-    if (showRange) {
+    if (showSuitability && suitabilityImage) {
+      result.push(new BitmapLayer({
+        id:      `${selectedSpecies?.scientificName ?? "sdm"}-suitability`,
+        image:   suitabilityImage,
+        bounds:  [-180, -90, 180, 90] as [number, number, number, number],
+        opacity: 0.75,
+      }));
+    }
+    if (showRange && selectedSpecies?.hasSdm) {
       result.push(new GeoJsonLayer({
-        id:                 "vc-range",
-        data:               "/species-distribution-model/vanessa_cardui_range.geojson",
+        id:                 `${selectedSpecies.scientificName}-range`,
+        data:               `/api/sdm/${encodeURIComponent(selectedSpecies.scientificName)}/range`,
         stroked:            true,
         filled:             true,
         getFillColor:       [34, 139, 34, 40],
@@ -585,7 +630,7 @@ export default function SDMPage() {
       }));
     }
     return result;
-  }, [showRange]);
+  }, [showSuitability, showRange, suitabilityImage, selectedSpecies]);
 
   const layers = useMemo(() => {
     if (showSuitability) return [];
@@ -728,17 +773,7 @@ export default function SDMPage() {
           useDevicePixels={1}
           onError={(error: Error) => console.warn("DeckGL:", error.message)}
         >
-          <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle}>
-            {hasHabitatData && showSuitability && (
-              <MapSource
-                type="image"
-                url={`/species-distribution-model/vanessa_cardui_suitability_${resolvedTheme === "light" ? "light" : "dark"}.png`}
-                coordinates={[[-180, 85.051129], [180, 85.051129], [180, -85.051129], [-180, -85.051129]]}
-              >
-                <MapLayer id="vc-suitability" type="raster" paint={{ "raster-opacity": 1 }} />
-              </MapSource>
-            )}
-          </Map>
+          <Map key={terrainMode ? "satellite" : "basemap"} mapStyle={mapStyle} />
         </DeckGL>
         {loading && !selectedSpecies?.disabled && (
           <div className="sdm-map-loading">
@@ -866,26 +901,26 @@ export default function SDMPage() {
                 {terrainMode ? "On" : "Off"}
               </button>
             </MapPanelRow>
-            <MapPanelDivider />
-            {hasHabitatData && (
+            {selectedSpecies?.hasSdm && (
               <>
-                <MapPanelRow label="Habitat Suitability">
+                <MapPanelDivider />
+                <MapPanelRow label="SDM Raster">
                   <button
                     className={`map-panel-btn${showSuitability ? " active" : ""}`}
                     onClick={() => setShowSuitability(s => {
                       if (!s) setIsPlaying(false);
                       return !s;
                     })}
-                    title="Habitat suitability raster (Vanessa cardui)"
+                    title="Habitat suitability raster"
                   >
-                    {showSuitability ? "On" : "Off"}
+                    {showSuitability ? (suitabilityImage ? "On" : "…") : "Off"}
                   </button>
                 </MapPanelRow>
                 <MapPanelRow label="Habitat Range">
                   <button
                     className={`map-panel-btn${showRange ? " active" : ""}`}
                     onClick={() => setShowRange(r => !r)}
-                    title="Predicted range polygon (Vanessa cardui)"
+                    title="Predicted range polygon"
                   >
                     {showRange ? "On" : "Off"}
                   </button>

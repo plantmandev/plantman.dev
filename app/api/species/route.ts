@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { querysdm as query } from '@/lib/db';
+import { query } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +10,7 @@ type SpeciesRow = {
   gbif_taxon_key: number | null;
   occurrence_count: number;
   category: string;
+  has_sdm: boolean;
 };
 
 export async function GET() {
@@ -21,7 +22,11 @@ export async function GET() {
         s.family,
         s.gbif_taxon_key,
         COUNT(o.id) AS occurrence_count,
-        'lepidoptera' AS category
+        'lepidoptera' AS category,
+        EXISTS (
+          SELECT 1 FROM sdm_outputs
+          WHERE  species_id = s.id AND status = 'completed'
+        ) AS has_sdm
       FROM species s
       LEFT JOIN lepidoptera_occurrences o ON o.species_id = s.id
       GROUP BY s.id, s.scientific_name, s.common_name, s.family, s.gbif_taxon_key
@@ -48,6 +53,7 @@ export async function GET() {
       host_plant_families: '',
       host_plant_status:   '',
       category:            sp.category,
+      has_sdm:             sp.has_sdm ?? false,
       disabled:            false,
     }));
 
