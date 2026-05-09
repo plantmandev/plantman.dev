@@ -313,9 +313,10 @@ export default function SDMPage() {
   const [tutorialCardIndex, setTutorialCardIndex] = useState<number>(0);
   const [flashcardSpecies, setFlashcardSpecies] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery]           = useState("");
-  const [showSuitability, setShowSuitability]   = useState(false);
-  const [showRange, setShowRange]               = useState(false);
-  const [suitabilityImage, setSuitabilityImage] = useState<ImageData | null>(null);
+  const [showSuitability, setShowSuitability] = useState(false);
+  const [showRange, setShowRange]             = useState(false);
+  const [suitabilityLayer, setSuitabilityLayer] = useState<{ image: ImageBitmap; bounds: [number, number, number, number] } | null>(null);
+  const suitabilityCacheRef                     = React.useRef<Record<string, { image: ImageBitmap; bounds: [number, number, number, number] }>>({});
 
   // ── Mount / canvas ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -323,41 +324,109 @@ export default function SDMPage() {
     setTimeout(() => setCanvasReady(true), 800);
   }, []);
 
-  // ── Reset SDM raster when species changes ───────────────────────────────
+  // ── Reset SDM raster when species or theme changes ──────────────────────
   useEffect(() => {
-    setSuitabilityImage(null);
-  }, [selectedSpecies]);
+    setSuitabilityLayer(null);
+  }, [selectedSpecies, resolvedTheme]);
 
-  // ── Decode suitability .tif for the selected species ─────────────────────
+  // ── Decode suitability TIFF for the selected species ─────────────────────
   useEffect(() => {
     if (!showSuitability || !selectedSpecies?.hasSdm) return;
+    const name     = selectedSpecies.scientificName;
+    const theme    = resolvedTheme ?? 'dark';
+    const cacheKey = `${name}::${theme}`;
+    const cached   = suitabilityCacheRef.current[cacheKey];
+    if (cached) { setSuitabilityLayer(cached); return; }
+
     let cancelled = false;
     (async () => {
       try {
-        const { fromUrl } = await import("geotiff");
-        const url   = `/api/sdm/${encodeURIComponent(selectedSpecies.scientificName)}/suitability`;
-        const tiff  = await fromUrl(url);
-        const image = await tiff.getImage();
-        const rasters = await image.readRasters();
-        const values = rasters[0] as Float32Array;
-        const width  = image.getWidth();
-        const height = image.getHeight();
-        const buf = new Uint8ClampedArray(width * height * 4);
-        for (let i = 0; i < values.length; i++) {
-          const v = values[i];
-          if (isNaN(v) || v <= 0) { buf[i * 4 + 3] = 0; continue; }
-          buf[i * 4 + 0] = Math.round(255 - 221 * v);
-          buf[i * 4 + 1] = Math.round(200 -  61 * v);
-          buf[i * 4 + 2] = Math.round( 50 -  16 * v);
-          buf[i * 4 + 3] = Math.round(v * 210);
+        const { fromArrayBuffer } = await import("geotiff");
+        const resp = await fetch(`/api/sdm/${encodeURIComponent(name)}/suitability`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const arrayBuf  = await resp.arrayBuffer();
+        const boundsHdr = resp.headers.get('X-SDM-Bounds');
+        const tiff      = await fromArrayBuffer(arrayBuf);
+        const image     = await tiff.getImage();
+        const rasters   = await image.readRasters();
+        const values    = rasters[0] as Float32Array;
+        const srcW      = image.getWidth();
+        const srcH      = image.getHeight();
+
+        let west: number, south: number, east: number, north: number;
+        if (boundsHdr) {
+          [west, south, east, north] = boundsHdr.split(',').map(Number);
+        } else {
+          const bb = image.getBoundingBox();
+          [west, south, east, north] = [bb[0], bb[1], bb[2], bb[3]];
         }
-        if (!cancelled) setSuitabilityImage(new ImageData(buf, width, height));
+
+        const MERC = 85.05113;
+        const cn   = Math.min(north, MERC);
+        const cs   = Math.max(south, -MERC);
+
+        const latToMerc = (lat: number) =>
+          Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI / 180) / 2));
+        const mercN    = latToMerc(cn);
+        const mercS    = latToMerc(cs);
+        const mercSpan = mercN - mercS;
+
+        const outW = Math.min(srcW, 1800);
+        const outH = Math.round(outW * (mercSpan / (2 * Math.PI)));
+        const pixH = (north - south) / srcH;
+
+        // Color steps matching the legend — interpolate across 10 stops
+        const steps = (theme === 'light' ? SDM_STEPS_LIGHT : SDM_STEPS_DARK).map((hex) => {
+          const n = parseInt(hex.slice(1), 16);
+          return [(n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF] as [number, number, number];
+        });
+
+        // Percentile stretch: map [p2, p98] of positive values → [0, 1]
+        // so every species uses the full palette regardless of raw scale
+        const positive = [] as number[];
+        for (let i = 0; i < values.length; i++) {
+          if (isFinite(values[i]) && values[i] > 0) positive.push(values[i]);
+        }
+        positive.sort((a, b) => a - b);
+        const n   = positive.length || 1;
+        const lo  = positive[Math.floor(n * 0.02)] ?? 0;
+        const hi  = positive[Math.floor(n * 0.98)] ?? positive[n - 1] ?? 1;
+        const rng = hi - lo || 1;
+
+        const buf = new Uint8ClampedArray(outW * outH * 4);
+        for (let row = 0; row < outH; row++) {
+          const mercY  = mercN - (row / outH) * mercSpan;
+          const lat    = (2 * Math.atan(Math.exp(mercY)) - Math.PI / 2) * (180 / Math.PI);
+          const srcRow = Math.round((north - lat) / pixH);
+          if (srcRow < 0 || srcRow >= srcH) continue;
+          for (let col = 0; col < outW; col++) {
+            const srcCol = Math.round(col * srcW / outW);
+            const v      = values[srcRow * srcW + srcCol];
+            const di     = (row * outW + col) * 4;
+            if (!isFinite(v) || v <= 0) { buf[di + 3] = 0; continue; }
+            const fi = Math.max(0, Math.min(1, (v - lo) / rng)) * (steps.length - 1);
+            const i0 = Math.floor(fi);
+            const i1 = Math.min(i0 + 1, steps.length - 1);
+            const t  = fi - i0;
+            buf[di]     = Math.round(steps[i0][0] + (steps[i1][0] - steps[i0][0]) * t);
+            buf[di + 1] = Math.round(steps[i0][1] + (steps[i1][1] - steps[i0][1]) * t);
+            buf[di + 2] = Math.round(steps[i0][2] + (steps[i1][2] - steps[i0][2]) * t);
+            buf[di + 3] = 215;
+          }
+        }
+
+        const layer = {
+          image:  await createImageBitmap(new ImageData(buf, outW, outH)),
+          bounds: [west, cs, east, cn] as [number, number, number, number],
+        };
+        suitabilityCacheRef.current[cacheKey] = layer;
+        if (!cancelled) setSuitabilityLayer(layer);
       } catch (e) {
-        console.warn("Failed to decode suitability .tif:", e);
+        console.warn("Failed to decode suitability TIFF:", e);
       }
     })();
     return () => { cancelled = true; };
-  }, [showSuitability, selectedSpecies]);
+  }, [showSuitability, selectedSpecies, resolvedTheme]);
 
   // ── Load flashcard species list ──────────────────────────────────────────
   useEffect(() => {
@@ -610,12 +679,12 @@ export default function SDMPage() {
 
   const sdmLayers = useMemo(() => {
     const result = [];
-    if (showSuitability && suitabilityImage) {
+    if (showSuitability && suitabilityLayer) {
       result.push(new BitmapLayer({
         id:      `${selectedSpecies?.scientificName ?? "sdm"}-suitability`,
-        image:   suitabilityImage,
-        bounds:  [-180, -90, 180, 90] as [number, number, number, number],
-        opacity: 0.75,
+        image:   suitabilityLayer.image,
+        bounds:  suitabilityLayer.bounds,
+        opacity: 0.85,
       }));
     }
     if (showRange && selectedSpecies?.hasSdm) {
@@ -630,7 +699,7 @@ export default function SDMPage() {
       }));
     }
     return result;
-  }, [showSuitability, showRange, suitabilityImage, selectedSpecies]);
+  }, [showSuitability, showRange, suitabilityLayer, selectedSpecies]);
 
   const layers = useMemo(() => {
     if (showSuitability) return [];
@@ -697,11 +766,9 @@ export default function SDMPage() {
         </button>
       )}
 
-      {/* ── Left panel ───────────────────────────────────────────────────── */}
-      <div className="sdm-left">
-
-        {/* Title + Search — anchored, never scrolls */}
-        <div className="sdm-block" style={{ padding: "28px 14px 10px" }}>
+      {/* ── Species Selector Panel — floating overlay, top-left ─────────── */}
+      <div className="species-panel">
+        <div className="species-panel-search">
           <div className="sdm-search-wrapper" style={{ marginBottom: 0 }}>
             <input
               type="text"
@@ -716,50 +783,48 @@ export default function SDMPage() {
           </div>
         </div>
 
-        {/* Species selector — fills remaining height */}
-        <div className="sdm-block sdm-selector">
-          {noResults ? (
-            <p className="sdm-search-empty">No species match &ldquo;{searchQuery}&rdquo;</p>
-          ) : (
-            <>
-              {butterflies.length > 0 && (
-                <SelectorSection
-                  title="Butterflies"
-                  items={butterflies}
-                  selectedFileName={selectedSpecies?.fileName ?? ""}
-                  onSelect={handleSelectSpecies}
-                  visibleCount={q ? Infinity : visibleCount}
-                  onLoadMore={handleLoadMore}
-                  tutorialCardIndex={tutorialStep === 1 ? tutorialCardIndex : null}
-                  flashcardSpecies={flashcardSpecies}
-                />
+        <div className="species-panel-selector">
+              {noResults ? (
+                <p className="sdm-search-empty">No species match &ldquo;{searchQuery}&rdquo;</p>
+              ) : (
+                <>
+                  {butterflies.length > 0 && (
+                    <SelectorSection
+                      title="Butterflies"
+                      items={butterflies}
+                      selectedFileName={selectedSpecies?.fileName ?? ""}
+                      onSelect={handleSelectSpecies}
+                      visibleCount={q ? Infinity : visibleCount}
+                      onLoadMore={handleLoadMore}
+                      tutorialCardIndex={tutorialStep === 1 ? tutorialCardIndex : null}
+                      flashcardSpecies={flashcardSpecies}
+                    />
+                  )}
+                  {nectarPlants.length > 0 && (
+                    <SelectorSection
+                      title="Nectar Plants"
+                      items={nectarPlants}
+                      selectedFileName={selectedSpecies?.fileName ?? ""}
+                      onSelect={handleSelectSpecies}
+                      visibleCount={q ? Infinity : visibleCount}
+                      onLoadMore={handleLoadMore}
+                      flashcardSpecies={flashcardSpecies}
+                    />
+                  )}
+                  {hostPlants.length > 0 && (
+                    <SelectorSection
+                      title="Host Plants"
+                      items={hostPlants}
+                      selectedFileName={selectedSpecies?.fileName ?? ""}
+                      onSelect={handleSelectSpecies}
+                      visibleCount={q ? Infinity : visibleCount}
+                      onLoadMore={handleLoadMore}
+                      flashcardSpecies={flashcardSpecies}
+                    />
+                  )}
+                </>
               )}
-              {nectarPlants.length > 0 && (
-                <SelectorSection
-                  title="Nectar Plants"
-                  items={nectarPlants}
-                  selectedFileName={selectedSpecies?.fileName ?? ""}
-                  onSelect={handleSelectSpecies}
-                  visibleCount={q ? Infinity : visibleCount}
-                  onLoadMore={handleLoadMore}
-                  flashcardSpecies={flashcardSpecies}
-                />
-              )}
-              {hostPlants.length > 0 && (
-                <SelectorSection
-                  title="Host Plants"
-                  items={hostPlants}
-                  selectedFileName={selectedSpecies?.fileName ?? ""}
-                  onSelect={handleSelectSpecies}
-                  visibleCount={q ? Infinity : visibleCount}
-                  onLoadMore={handleLoadMore}
-                  flashcardSpecies={flashcardSpecies}
-                />
-              )}
-            </>
-          )}
-        </div>
-
+            </div>
       </div>
 
       {/* ── Map ──────────────────────────────────────────────────────────── */}
@@ -799,16 +864,27 @@ export default function SDMPage() {
 
         {/* Panel — bottom-right of map */}
         <div style={{ position: "absolute", bottom: 24, right: 24, zIndex: 100 }}>
+          {selectedSpecies && (
+            <div className="sdm-species-hero">
+              <img
+                src={getSpeciesImage(selectedSpecies.scientificName)}
+                alt={selectedSpecies.commonName}
+                className="sdm-species-hero-img"
+                onError={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                }}
+              />
+              <div className="sdm-species-hero-label">
+                <span className="sdm-species-hero-common">{selectedSpecies.commonName}</span>
+                <span className="sdm-species-hero-scientific">{selectedSpecies.scientificName}</span>
+              </div>
+            </div>
+          )}
           <MapPanel
-            title={selectedSpecies?.commonName ?? "Select a species"}
             width={430}
             collapsible={false}
             style={{ position: "static" }}
           >
-            {selectedSpecies && (
-              <p className="sdm-scientific-name" style={{ margin: 0 }}>{selectedSpecies.scientificName}</p>
-            )}
-            <MapPanelDivider />
 
             <div className="sdm-playback-row" style={{ marginBottom: 0 }}>
               <div style={{ position: "relative" }}>
@@ -913,7 +989,7 @@ export default function SDMPage() {
                     })}
                     title="Habitat suitability raster"
                   >
-                    {showSuitability ? (suitabilityImage ? "On" : "…") : "Off"}
+                    {showSuitability ? (suitabilityLayer ? "On" : "…") : "Off"}
                   </button>
                 </MapPanelRow>
                 <MapPanelRow label="Habitat Range">

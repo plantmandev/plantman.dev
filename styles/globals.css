@@ -985,36 +985,61 @@ html.light .logo-light { display: block; }
    ========================================================================== */
 
 .sdm-root {
-  display: flex;
-  flex-direction: row;
+  position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
 .sdm-map-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  inset: 0;
 }
 
-.sdm-left {
-  width: 500px;
-  flex-shrink: 0;
-  height: 100%;
-  overflow: hidden;
+/* ==========================================================================
+   SPECIES SELECTOR PANEL — floating overlay, top-left of map
+   ========================================================================== */
+
+.species-panel {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  width: 380px;
+  max-height: calc(100% - 48px);
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--foreground);
   display: flex;
   flex-direction: column;
-  z-index: 10;
-  border-right: 1px solid var(--sdm-panel-border);
-  background: var(--sdm-panel-bg);
 }
 
-.sdm-block {
-  background: var(--sdm-panel-bg);
-  border-bottom: 1px solid var(--sdm-panel-border);
+.species-panel-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.species-panel-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+.species-panel-selector {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  padding: 12px;
+  min-height: 0;
+}
+
+.species-panel-selector::-webkit-scrollbar { display: none; }
 
 .sdm-info { padding: 14px 16px; }
 
@@ -1160,18 +1185,6 @@ html.light .logo-light { display: block; }
 .sdm-year-cell.missing  { background: transparent; color: #c0392b; border-color: var(--border); }
 
 .sdm-category-row { display: none; }
-
-.sdm-selector {
-  padding: 16px;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  min-height: 0;
-  position: relative;
-}
-
-.sdm-selector::-webkit-scrollbar { display: none; }
 
 .sdm-search-wrapper {
   position: relative;
@@ -2093,6 +2106,55 @@ html.light .maplibregl-canvas {
 }
 
 /* ==========================================================================
+   SDM SPECIES HERO — large image above the control panel
+   ========================================================================== */
+
+.sdm-species-hero {
+  width: 430px;
+  height: 340px;
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sdm-species-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 16px;
+}
+
+.sdm-species-hero-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 14px 10px;
+  background: linear-gradient(to top, var(--panel-bg) 60%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sdm-species-hero-common {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.2;
+}
+
+.sdm-species-hero-scientific {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* ==========================================================================
    MAP PANEL — reusable floating overlay for deck.gl maps
    ========================================================================== */
 
@@ -2256,12 +2318,10 @@ html.light .maplibregl-canvas {
   .projects-content,
   .ph-root              { max-width: 55%; }
 
-  .sdm-left  { width: 400px; }
   .mra-left { width: 400px; min-width: 400px; }
 }
 
 @media (max-width: 1280px) {
-  .sdm-left  { width: 340px; }
   .mra-left { width: 340px; min-width: 340px; }
 }
 
