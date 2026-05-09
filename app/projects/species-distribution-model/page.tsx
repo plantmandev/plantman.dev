@@ -313,6 +313,7 @@ export default function SDMPage() {
   const [tutorialCardIndex, setTutorialCardIndex] = useState<number>(0);
   const [flashcardSpecies, setFlashcardSpecies] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery]           = useState("");
+  const [showOccurrences, setShowOccurrences] = useState(true);
   const [showSuitability, setShowSuitability] = useState(false);
   const [showRange, setShowRange]             = useState(false);
   const [suitabilityLayer, setSuitabilityLayer] = useState<{ image: ImageBitmap; bounds: [number, number, number, number] } | null>(null);
@@ -702,7 +703,7 @@ export default function SDMPage() {
   }, [showSuitability, showRange, suitabilityLayer, selectedSpecies]);
 
   const layers = useMemo(() => {
-    if (showSuitability) return [];
+    if (!showOccurrences) return [];
     return [
       new ScatterplotLayer({
         id:             "occurrences",
@@ -722,7 +723,7 @@ export default function SDMPage() {
         pickable:        false,
       }),
     ];
-  }, [showSuitability, data, currentTime, timeWindowMs, timeRange, safeStep.days, resolvedTheme]);
+  }, [showOccurrences, data, currentTime, timeWindowMs, timeRange, safeStep.days, resolvedTheme]);
 
   const yearStatuses = useMemo(() => {
     const yearsWithData = new Set(data.map((d) => new Date(d.timestamp).getFullYear()));
@@ -891,7 +892,7 @@ export default function SDMPage() {
                 <button
                   onClick={() => { setIsPlaying(!isPlaying); advanceTutorial(3); }}
                   className={`sdm-play-btn${tutorialStep === 3 ? " sdm-tutorial-target" : ""}`}
-                  disabled={loading || selectedSpecies?.disabled}
+                  disabled={loading || selectedSpecies?.disabled || !showOccurrences}
                 >
                   {loading ? <SpriteLoader size={26} /> : isPlaying ? "||" : "▶"}
                 </button>
@@ -969,6 +970,17 @@ export default function SDMPage() {
 
             <MapPanelDivider />
 
+            <MapPanelRow label="Occurrences">
+              <button
+                className={`map-panel-btn${showOccurrences ? " active" : ""}`}
+                onClick={() => setShowOccurrences(v => {
+                  if (v) setIsPlaying(false);
+                  return !v;
+                })}
+              >
+                {showOccurrences ? "On" : "Off"}
+              </button>
+            </MapPanelRow>
             <MapPanelRow label="Satellite">
               <button
                 className={`map-panel-btn${terrainMode ? " active" : ""}`}

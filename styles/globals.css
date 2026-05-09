@@ -2265,8 +2265,8 @@ html.light .maplibregl-canvas {
 /* ── Suitability legend — standalone bottom-left ─────────────────────────── */
 .sdm-suit-legend {
   position: absolute;
-  bottom: 24px;
-  left: 24px;
+  top: 24px;
+  left: calc(24px + 380px + 12px);
   z-index: 100;
   width: 190px;
   background: var(--panel-bg);
