@@ -266,7 +266,7 @@ button:focus-visible {
   background: var(--near-black);
   border: 1px solid var(--border);
   border-top: none;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0;
   padding: 0 24px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
 }
@@ -1658,7 +1658,7 @@ html.light .maplibregl-canvas {
   padding: 7px 0;
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
-  border-radius: 3px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 11px;
   font-family: inherit;
@@ -1789,7 +1789,7 @@ html.light .maplibregl-canvas {
   padding: 4px 0;
   background: var(--btn-bg);
   border: 1px solid var(--btn-border);
-  border-radius: 2px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 9px;
   font-family: inherit;

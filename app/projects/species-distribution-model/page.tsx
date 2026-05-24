@@ -973,10 +973,12 @@ export default function SDMPage() {
             <MapPanelRow label="Occurrences">
               <button
                 className={`map-panel-btn${showOccurrences ? " active" : ""}`}
-                onClick={() => setShowOccurrences(v => {
-                  if (v) setIsPlaying(false);
-                  return !v;
-                })}
+                onClick={() => {
+                  const next = !showOccurrences;
+                  if (!next) setIsPlaying(false);
+                  else setShowSuitability(false);
+                  setShowOccurrences(next);
+                }}
               >
                 {showOccurrences ? "On" : "Off"}
               </button>
@@ -991,14 +993,17 @@ export default function SDMPage() {
             </MapPanelRow>
             {selectedSpecies?.hasSdm && (
               <>
-                <MapPanelDivider />
                 <MapPanelRow label="SDM Raster">
                   <button
                     className={`map-panel-btn${showSuitability ? " active" : ""}`}
-                    onClick={() => setShowSuitability(s => {
-                      if (!s) setIsPlaying(false);
-                      return !s;
-                    })}
+                    onClick={() => {
+                      const next = !showSuitability;
+                      if (next) {
+                        setIsPlaying(false);
+                        setShowOccurrences(false);
+                      }
+                      setShowSuitability(next);
+                    }}
                     title="Habitat suitability raster"
                   >
                     {showSuitability ? (suitabilityLayer ? "On" : "…") : "Off"}
