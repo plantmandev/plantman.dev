@@ -1016,6 +1016,42 @@ html.light .logo-light { display: block; }
   flex-direction: column;
 }
 
+.species-panel.collapsed {
+  max-height: none;
+}
+
+.species-panel-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
+}
+
+.species-panel.collapsed .species-panel-tab {
+  border-bottom: none;
+}
+
+.species-panel-tab:hover {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.species-panel-tab-chevron {
+  font-size: 9px;
+  opacity: 0.6;
+}
+
 .species-panel-body {
   display: flex;
   flex-direction: column;

@@ -223,8 +223,12 @@ export default function MineReclamationPage() {
   // Fetch mine list from DB on mount
   useEffect(() => {
     fetch("/api/mines")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data: any[]) => {
+        if (!Array.isArray(data)) throw new Error("Unexpected response");
         const list: Mine[] = data.map(m => ({
           slug:         m.slug,
           label:        m.mine_name,
@@ -250,7 +254,10 @@ export default function MineReclamationPage() {
         }
         setMinesLoaded(true);
       })
-      .catch(() => setMinesLoaded(true));
+      .catch(err => {
+        console.error("Failed to load mines:", err);
+        setMinesLoaded(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -384,10 +391,18 @@ export default function MineReclamationPage() {
     localStorage.setItem(TUTORIAL_KEY, "1");
   }, []);
 
-  if (!mounted || !minesLoaded || !selectedMine) {
+  if (!mounted || !minesLoaded) {
     return (
       <div className="mra-loading">
         <span className="mra-loading-text">Initializing…</span>
+      </div>
+    );
+  }
+
+  if (!selectedMine) {
+    return (
+      <div className="mra-loading">
+        <span className="mra-loading-text">No mine data available</span>
       </div>
     );
   }

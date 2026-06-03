@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useTheme } from "next-themes";
 import { ScatterplotLayer, GeoJsonLayer, BitmapLayer } from "@deck.gl/layers";
@@ -316,6 +316,8 @@ export default function SDMPage() {
   const [showOccurrences, setShowOccurrences] = useState(true);
   const [showSuitability, setShowSuitability] = useState(false);
   const [showRange, setShowRange]             = useState(false);
+  const [panelCollapsed, setPanelCollapsed]   = useState(false);
+  const autoCollapsedRef                      = useRef(false);
   const [suitabilityLayer, setSuitabilityLayer] = useState<{ image: ImageBitmap; bounds: [number, number, number, number] } | null>(null);
   const suitabilityCacheRef                     = React.useRef<Record<string, { image: ImageBitmap; bounds: [number, number, number, number] }>>({});
 
@@ -323,6 +325,23 @@ export default function SDMPage() {
   useEffect(() => {
     setMounted(true);
     setTimeout(() => setCanvasReady(true), 800);
+  }, []);
+
+  // ── Auto-collapse species panel on short screens ─────────────────────────
+  useEffect(() => {
+    const check = () => {
+      const isShort = window.innerHeight < 600;
+      if (isShort && !autoCollapsedRef.current) {
+        autoCollapsedRef.current = true;
+        setPanelCollapsed(true);
+      } else if (!isShort && autoCollapsedRef.current) {
+        autoCollapsedRef.current = false;
+        setPanelCollapsed(false);
+      }
+    };
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   // ── Reset SDM raster when species or theme changes ──────────────────────
@@ -768,23 +787,35 @@ export default function SDMPage() {
       )}
 
       {/* ── Species Selector Panel — floating overlay, top-left ─────────── */}
-      <div className="species-panel">
-        <div className="species-panel-search">
-          <div className="sdm-search-wrapper" style={{ marginBottom: 0 }}>
-            <input
-              type="text"
-              className="sdm-search-input"
-              placeholder="Search species…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button className="sdm-search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">×</button>
-            )}
-          </div>
-        </div>
+      <div className={`species-panel${panelCollapsed ? " collapsed" : ""}`}>
+        <button
+          className="species-panel-tab"
+          onClick={() => setPanelCollapsed(c => !c)}
+          aria-expanded={!panelCollapsed}
+          aria-label={panelCollapsed ? "Expand species selector" : "Collapse species selector"}
+        >
+          <span>Species</span>
+          <span className="species-panel-tab-chevron">{panelCollapsed ? "▲" : "▼"}</span>
+        </button>
 
-        <div className="species-panel-selector">
+        {!panelCollapsed && (
+          <>
+            <div className="species-panel-search">
+              <div className="sdm-search-wrapper" style={{ marginBottom: 0 }}>
+                <input
+                  type="text"
+                  className="sdm-search-input"
+                  placeholder="Search species…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button className="sdm-search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">×</button>
+                )}
+              </div>
+            </div>
+
+            <div className="species-panel-selector">
               {noResults ? (
                 <p className="sdm-search-empty">No species match &ldquo;{searchQuery}&rdquo;</p>
               ) : (
@@ -826,6 +857,8 @@ export default function SDMPage() {
                 </>
               )}
             </div>
+          </>
+        )}
       </div>
 
       {/* ── Map ──────────────────────────────────────────────────────────── */}
